@@ -417,6 +417,7 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
+	fmt.Println("connecting to redis.........")
 	/*redis.Pool = &redisCon.Pool{
 		Dial: func () (redisCon.Conn, error) {
 			opts := []redisCon.DialOption{}
