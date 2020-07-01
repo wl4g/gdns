@@ -6,11 +6,13 @@ import (
 	"github.com/miekg/dns"
 	"strings"
 	"time"
-
+    clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/coredns/coredns/plugin"
 
 	redisCon "github.com/go-redis/redis/v7"
 )
+
+var log = clog.NewWithPlugin("coredns-redisc")
 
 type Redis struct {
 	Next           plugin.Handler
@@ -369,6 +371,7 @@ func (redis *Redis) get(key string, z *Zone) *Record {
 	}
 
 	val = conn.HGet(redis.keyPrefix + z.Name + redis.keySuffix, label).Val()
+	log.Debug("HGet: "+redis.keyPrefix + z.Name + redis.keySuffix+ " label:"+ label+" val: "+ val)
 
 	/*reply, err = conn.Do("HGET", redis.keyPrefix + z.Name + redis.keySuffix, label)
 	if err != nil {
@@ -422,23 +425,8 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	fmt.Println("connecting to redis.........2")
-	/*redis.Pool = &redisCon.Pool{
-		Dial: func () (redisCon.Conn, error) {
-			opts := []redisCon.DialOption{}
-			if redis.redisPassword != "" {
-				opts = append(opts, redisCon.DialPassword(redis.redisPassword))
-			}
-			if redis.connectTimeout != 0 {
-				opts = append(opts, redisCon.DialConnectTimeout(time.Duration(redis.connectTimeout)*time.Millisecond))
-			}
-			if redis.readTimeout != 0 {
-				opts = append(opts, redisCon.DialReadTimeout(time.Duration(redis.readTimeout)*time.Millisecond))
-			}
-
-			return redisCon.Dial("tcp", redis.redisAddress, opts...)
-		},
-	}*/
+	//fmt.Println("connecting to redis.........")
+	log.Info("connecting to redis.........")
 
 	redisAddress := strings.Split(redis.redisAddress,",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
@@ -447,10 +435,10 @@ func (redis *Redis) Connect() {
 		},*/
 		Addrs: redisAddress,
 		Password:     redis.redisPassword,              // 设置密码
-		//Password:     "zzx!@#$%",              // 设置密码
-		DialTimeout:  5 * time.Second, // 设置连接超时
-		ReadTimeout:  5 * time.Second, // 设置读取超时
-		WriteTimeout: 5 * time.Second, // 设置写入超时
+		//Password:     "zzx!@#$%",              		// 设置密码
+		DialTimeout:  5 * time.Second, 					// 设置连接超时
+		ReadTimeout:  5 * time.Second, 					// 设置读取超时
+		WriteTimeout: 5 * time.Second, 					// 设置写入超时
 	})
 
 }
@@ -482,17 +470,10 @@ func (redis *Redis) load(zone string) *Zone {
 
 	vals := conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val()
 
+	log.Info("load HKEY: "+redis.keyPrefix + zone + redis.keySuffix,"vals: vals")
+
 	//keysin := conn.Do("HKEYS",redis.keyPrefix + zone + redis.keySuffix).Val()
 	//vals = InterfaceToArray(keysin)
-
-	/*reply, err = conn.Do("HKEYS", redis.keyPrefix + zone + redis.keySuffix)
-	if err != nil {
-		return nil
-	}
-	vals, err = redisCon.Strings(reply, nil)
-	if err != nil {
-		return nil
-	}*/
 
 	z := new(Zone)
 	z.Name = zone
@@ -527,6 +508,6 @@ func split255(s string) []string {
 const (
 	defaultTtl = 360
 	hostmaster = "hostmaster"
-	zoneUpdateTime = 10*time.Minute
+	zoneUpdateTime = 3*time.Minute
 	transferLength = 1000
 )
