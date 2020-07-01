@@ -40,7 +40,7 @@ func (redis *Redis) LoadZones() {
 	//defer conn.Close()
 
 	s := conn.Do("KEYS", redis.keyPrefix+"*"+redis.keySuffix).Val()
-	log.Info("Load Zones KEYS:%s s:%s", redis.keyPrefix+"*"+redis.keySuffix, s)
+	log.Infof("Load Zones KEYS:%s s:%s", redis.keyPrefix+"*"+redis.keySuffix, s)
 	zones = InterfaceToArray(s)
 
 	for i, _ := range zones {
@@ -265,7 +265,7 @@ func (redis *Redis) AXFR(z *Zone) (records []dns.RR) {
 	records = append(records, extras...)
 	records = append(records, soa...)
 
-	log.Debug("Query AXFR of request: %s", records)
+	log.Debugf("Query AXFR of request: %s", records)
 	return
 }
 
@@ -363,7 +363,7 @@ func (redis *Redis) get(key string, z *Zone) *Record {
 	}
 
 	val = conn.HGet(redis.keyPrefix+z.Name+redis.keySuffix, label).Val()
-	log.Debug("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name+redis.keySuffix, label, val)
+	log.Debugf("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name+redis.keySuffix, label, val)
 
 	r := new(Record)
 	err = json.Unmarshal([]byte(val), r)
@@ -446,7 +446,7 @@ func (redis *Redis) load(zone string) *Zone {
 	//defer conn.Close()
 
 	vals := conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val()
-	log.Info("load HKEYS: %s vals:%s", redis.keyPrefix+zone+redis.keySuffix, vals)
+	log.Infof("load HKEYS: %s vals:%s", redis.keyPrefix+zone+redis.keySuffix, vals)
 
 	z := new(Zone)
 	z.Name = zone
