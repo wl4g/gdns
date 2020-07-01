@@ -14,7 +14,7 @@ import (
 
 type Redis struct {
 	Next           plugin.Handler
-	ClusterClient           *redisCon.ClusterClient
+	ClusterClient  *redisCon.ClusterClient
 	redisAddress   string
 	redisPassword  string
 	connectTimeout int
@@ -38,10 +38,12 @@ func (redis *Redis) LoadZones() {
 		fmt.Println("error connecting to redis")
 		return
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	//reply, err = conn.Do("KEYS", redis.keyPrefix + "*" + redis.keySuffix)
 	s := conn.Do("KEYS",redis.keyPrefix + "*" + redis.keySuffix).Val()
+	fmt.Println("KEYS:"+redis.keyPrefix + "*" + redis.keySuffix)
+	fmt.Println(s)
 	zones = InterfaceToArray(s)
 	/*if err != nil {
 		return
@@ -56,8 +58,11 @@ func (redis *Redis) LoadZones() {
 }
 
 func InterfaceToArray(i interface{}) []string {
-	iArray := i.([]interface{});
 	var result []string
+	if i == nil {
+		return result
+	}
+	iArray := i.([]interface{});
 	for _, elem := range iArray {
 		result = append(result, elem.(string))
 	}
@@ -354,7 +359,7 @@ func (redis *Redis) get(key string, z *Zone) *Record {
 		fmt.Println("error connecting to redis")
 		return nil
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	var label string
 	if key == z.Name {
@@ -417,7 +422,7 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	fmt.Println("connecting to redis.........")
+	fmt.Println("connecting to redis.........2")
 	/*redis.Pool = &redisCon.Pool{
 		Dial: func () (redisCon.Conn, error) {
 			opts := []redisCon.DialOption{}
@@ -435,13 +440,14 @@ func (redis *Redis) Connect() {
 		},
 	}*/
 
-	redisAddress := strings.Split(redis.redisAddress,",")
+	//redisAddress := strings.Split(redis.redisAddress,",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
-		/*Addrs: []string{ // 填写master主机
+		Addrs: []string{ // 填写master主机
 			"10.0.0.160:6379","10.0.0.160:6380","10.0.0.160:6381","10.0.0.162:6379","10.0.0.162:6380","10.0.0.162:6381",
-		},*/
-		Addrs: redisAddress,
-		Password:     redis.redisPassword,              // 设置密码
+		},
+		//Addrs: redisAddress,
+		//Password:     redis.redisPassword,              // 设置密码
+		Password:     "zzx!@#$%",              // 设置密码
 		DialTimeout:  5 * time.Second, // 设置连接超时
 		ReadTimeout:  5 * time.Second, // 设置读取超时
 		WriteTimeout: 5 * time.Second, // 设置写入超时
@@ -457,7 +463,7 @@ func (redis *Redis) save(zone string, subdomain string, value string) error {
 		fmt.Println("error connecting to redis")
 		return nil
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	err = conn.HSet(redis.keyPrefix + zone + redis.keySuffix, subdomain, value).Err();
 	//_, err = conn.Do("HSET", redis.keyPrefix + zone + redis.keySuffix, subdomain, value)
@@ -465,20 +471,19 @@ func (redis *Redis) save(zone string, subdomain string, value string) error {
 }
 
 func (redis *Redis) load(zone string) *Zone {
-	var (
-		//reply interface{}
-		//err error
-		vals []string
-	)
+
 
 	conn := redis.ClusterClient
 	if conn == nil {
 		fmt.Println("error connecting to redis")
 		return nil
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
-	vals = conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val();
+	vals := conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val()
+
+	//keysin := conn.Do("HKEYS",redis.keyPrefix + zone + redis.keySuffix).Val()
+	//vals = InterfaceToArray(keysin)
 
 	/*reply, err = conn.Do("HKEYS", redis.keyPrefix + zone + redis.keySuffix)
 	if err != nil {
