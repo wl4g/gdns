@@ -440,14 +440,14 @@ func (redis *Redis) Connect() {
 		},
 	}*/
 
-	//redisAddress := strings.Split(redis.redisAddress,",")
+	redisAddress := strings.Split(redis.redisAddress,",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
-		Addrs: []string{ // 填写master主机
+		/*Addrs: []string{ // 填写master主机
 			"10.0.0.160:6379","10.0.0.160:6380","10.0.0.160:6381","10.0.0.162:6379","10.0.0.162:6380","10.0.0.162:6381",
-		},
-		//Addrs: redisAddress,
-		//Password:     redis.redisPassword,              // 设置密码
-		Password:     "zzx!@#$%",              // 设置密码
+		},*/
+		Addrs: redisAddress,
+		Password:     redis.redisPassword,              // 设置密码
+		//Password:     "zzx!@#$%",              // 设置密码
 		DialTimeout:  5 * time.Second, // 设置连接超时
 		ReadTimeout:  5 * time.Second, // 设置读取超时
 		WriteTimeout: 5 * time.Second, // 设置写入超时
