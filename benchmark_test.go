@@ -77,7 +77,7 @@ var testCasesMiss = []test.Case {
 func BenchmarkHit(b *testing.B) {
 	fmt.Println("benchmark test")
 	r := newRedisPlugin()
-	conn := r.Pool.Get()
+	conn := r.ClusterClient
 	defer conn.Close()
 	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*" + r.keySuffix)
 	for _, cmd := range benchmarkEntries {
@@ -98,7 +98,7 @@ func BenchmarkHit(b *testing.B) {
 func BenchmarkMiss(b *testing.B) {
 	fmt.Println("benchmark test")
 	r := newRedisPlugin()
-	conn := r.Pool.Get()
+	conn := r.ClusterClient
 	defer conn.Close()
 	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*" + r.keySuffix)
 	for _, cmd := range benchmarkEntries {

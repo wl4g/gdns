@@ -216,7 +216,7 @@ func newRedisPlugin() *Redis {
 func TestAnswer(t *testing.T) {
 	fmt.Println("lookup test")
 	r := newRedisPlugin()
-	conn := r.Pool.Get()
+	conn := r.ClusterClient
 	defer conn.Close()
 
 	for i, zone := range zones {
@@ -240,7 +240,7 @@ func TestAnswer(t *testing.T) {
 			if resp == nil {
 				resp = new(dns.Msg)
 			}
-			test.SortAndCheck(t, resp, tc)
+			test.SortAndCheck(resp , tc)
 		}
 	}
 }
