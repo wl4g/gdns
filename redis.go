@@ -23,33 +23,111 @@ type Redis struct {
 	keyPrefix      string
 	keySuffix      string
 	Ttl            uint32
-	Zones          []string
+	//Zones          []string
 	LastZoneUpdate time.Time
 }
 
-func (redis *Redis) LoadZones() {
+/*func (redis *Redis) LoadZones() {
 	var (
 		zones []string
+		err   error
 	)
 
-	conn := redis.ClusterClient
-	if conn == nil {
+	client := redis.ClusterClient
+	if client == nil {
 		log.Error("error connecting to redis")
 		return
 	}
-	//defer conn.Close()
 
-	s := conn.Do("KEYS", redis.keyPrefix+"*"+redis.keySuffix).Val()
-	log.Infof("Load Zones KEYS:%s s:%s", redis.keyPrefix+"*"+redis.keySuffix, s)
-	zones = InterfaceToArray(s)
+	zonesKey := redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones1 KEYS:%s zones:%s", zonesKey, zones)
+
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
+
+	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
+	zones, err = client.Keys(zonesKey).Result()
+	if err != nil {
+		log.Error(err)
+	}
+	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
 
 	for i, _ := range zones {
 		zones[i] = strings.TrimPrefix(zones[i], redis.keyPrefix)
 		zones[i] = strings.TrimSuffix(zones[i], redis.keySuffix)
 	}
 	redis.LastZoneUpdate = time.Now()
-	redis.Zones = zones
-}
+	if len(zones) > 0 { // if get from redis nil, no fresh
+		//redis.Zones = zones
+	} else {
+		log.Info("")
+	}
+}*/
 
 func InterfaceToArray(i interface{}) []string {
 	var result []string
@@ -418,6 +496,8 @@ func (redis *Redis) Connect() {
 		DialTimeout:  5 * time.Second,     // 设置连接超时
 		ReadTimeout:  5 * time.Second,     // 设置读取超时
 		WriteTimeout: 5 * time.Second,     // 设置写入超时
+		MaxRetries:   8,
+		PoolSize:     4,
 	})
 
 }
@@ -478,9 +558,27 @@ func split255(s string) []string {
 	return sx
 }
 
+func Qname2Zone(pname string) string {
+	s := strings.Split(pname, ".")
+	if len(s) <= 3 {
+		return pname
+	} else { //>3
+		for i, _ := range SpecialDomains {
+			if strings.HasSuffix(pname, SpecialDomains[i]) {
+				d := strings.ReplaceAll(pname, SpecialDomains[i], "")
+				t := strings.Split(d, ".")
+				return t[len(t)-2] + "." + SpecialDomains[i]
+			}
+		}
+		return s[len(s)-3] + "." + s[len(s)-2] + "."
+	}
+}
+
+var SpecialDomains = [...]string{"com.cn.", "net.cn."}
+
 const (
 	defaultTtl     = 360
 	hostmaster     = "hostmaster"
-	zoneUpdateTime = 3 * time.Minute
+	zoneUpdateTime = 1 * time.Minute
 	transferLength = 1000
 )

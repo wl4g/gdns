@@ -103,7 +103,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 		}
 
 		redis.Connect()
-		redis.LoadZones()
+		//redis.LoadZones()
 
 		return &redis, nil
 	}
