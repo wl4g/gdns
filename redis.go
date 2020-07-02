@@ -27,108 +27,6 @@ type Redis struct {
 	LastZoneUpdate time.Time
 }
 
-/*func (redis *Redis) LoadZones() {
-	var (
-		zones []string
-		err   error
-	)
-
-	client := redis.ClusterClient
-	if client == nil {
-		log.Error("error connecting to redis")
-		return
-	}
-
-	zonesKey := redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones1 KEYS:%s zones:%s", zonesKey, zones)
-
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones2 KEYS:%s zones:%s", zonesKey, zones)
-
-	zonesKey = redis.keyPrefix + "*" + redis.keySuffix
-	zones, err = client.Keys(zonesKey).Result()
-	if err != nil {
-		log.Error(err)
-	}
-	log.Infof("Load Zones3 KEYS:%s zones:%s", zonesKey, zones)
-
-	for i, _ := range zones {
-		zones[i] = strings.TrimPrefix(zones[i], redis.keyPrefix)
-		zones[i] = strings.TrimSuffix(zones[i], redis.keySuffix)
-	}
-	redis.LastZoneUpdate = time.Now()
-	if len(zones) > 0 { // if get from redis nil, no fresh
-		//redis.Zones = zones
-	} else {
-		log.Info("")
-	}
-}*/
-
 func InterfaceToArray(i interface{}) []string {
 	var result []string
 	if i == nil {
@@ -574,11 +472,10 @@ func Qname2Zone(pname string) string {
 	}
 }
 
-var SpecialDomains = [...]string{"com.cn.", "net.cn."}
+//这里仅包含中国类别域名,其实还有行政区域名,中文域名,这里暂时不作处理
+var SpecialDomains = [...]string{"com.cn.", "net.cn.",".ac.cn",".org.cn",".gov.cn",".mil.cn",".edu.cn"}
 
 const (
 	defaultTtl     = 360
-	hostmaster     = "hostmaster"
-	zoneUpdateTime = 1 * time.Minute
 	transferLength = 1000
 )
