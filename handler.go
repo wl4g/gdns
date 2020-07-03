@@ -16,6 +16,11 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 	qname := state.Name()
 	qtype := state.Type()
 
+	//TODO Blacklist use this way
+	/*if qname=="baidu.com."{
+		return dns.RcodeRefused, nil
+	}*/
+
 	zone := Qname2Zone(qname)
 
 	if zone == "" {
@@ -24,7 +29,7 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 
 	z := redis.load(zone)
 	if z == nil {
-		return redis.errorResponse(state, zone, dns.RcodeServerFailure, nil)
+		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
 	}
 
 	if qtype == "AXFR" {
@@ -68,6 +73,9 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 	extras := make([]dns.RR, 0, 10)
 
 	record := redis.get(location, z)
+	if record==nil {
+		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+	}
 
 	switch qtype {
 	case "A":
@@ -107,7 +115,7 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 // Name implements the Handler interface.
-func (redis *Redis) Name() string { return "redis" }
+func (redis *Redis) Name() string { return PluginName }
 
 func (redis *Redis) errorResponse(state request.Request, zone string, rcode int, err error) (int, error) {
 	m := new(dns.Msg)
