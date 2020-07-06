@@ -39,12 +39,13 @@ func TestRedisCollector(t *testing.T) {
 	hget := clusterClient.HGet("_dns:heweijie.top", "host").Val()
 	fmt.Println(hget)
 
-	vals := clusterClient.HKeys("_dns:heweijie.top.").Val();//_dns:heweijie.top.
+	vals := clusterClient.HKeys("_dns:heweijie.top.").Val() //_dns:heweijie.top.
 	fmt.Println(vals)
 
+	smembers := clusterClient.SMembers("_dns_blacklist").Val()
+	fmt.Println(smembers)
+
 }
-
-
 
 func TestQname2Zone(t *testing.T) {
 	s := Qname2Zone("host.heweijie.top.")
@@ -53,6 +54,16 @@ func TestQname2Zone(t *testing.T) {
 	fmt.Println(s)
 	s = Qname2Zone("heweijie.top.")
 	fmt.Println(s)
+}
+
+func TestSim(t *testing.T) {
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","fanyi.*.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.ba*u.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu*"))
 }
 
 

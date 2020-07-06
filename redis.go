@@ -436,6 +436,36 @@ func (redis *Redis) load(zone string) *Zone {
 	return z
 }
 
+func (redis *Redis) GetBlacklist() []string {
+	conn := redis.ClusterClient
+	if conn == nil {
+		log.Error("error connecting to redis")
+		return nil
+	}
+	smembers, err := conn.SMembers(blacklistKey).Result()
+	if err != nil {
+		log.Error("error get SMembers", err)
+		return nil
+	}
+	log.Debugf("GetBlacklist: %s vals:%s", blacklistKey, smembers)
+	return smembers
+}
+
+func (redis *Redis) GetWhitelist() []string {
+	conn := redis.ClusterClient
+	if conn == nil {
+		log.Error("error connecting to redis")
+		return nil
+	}
+	smembers, err := conn.SMembers(whitelistKey).Result()
+	if err != nil {
+		log.Error("error get SMembers", err)
+		return nil
+	}
+	log.Debugf("GetWhitelist: %s vals:%s", whitelistKey, smembers)
+	return smembers
+}
+
 func split255(s string) []string {
 	if len(s) < 255 {
 		return []string{s}
@@ -456,26 +486,12 @@ func split255(s string) []string {
 	return sx
 }
 
-func Qname2Zone(pname string) string {
-	s := strings.Split(pname, ".")
-	if len(s) <= 3 {
-		return pname
-	} else { //>3
-		for i, _ := range SpecialDomains {
-			if strings.HasSuffix(pname, SpecialDomains[i]) {
-				d := strings.ReplaceAll(pname, SpecialDomains[i], "")
-				t := strings.Split(d, ".")
-				return t[len(t)-2] + "." + SpecialDomains[i]
-			}
-		}
-		return s[len(s)-3] + "." + s[len(s)-2] + "."
-	}
-}
-
 //这里仅包含中国类别域名,其实还有行政区域名,中文域名,这里暂时不作处理
-var SpecialDomains = [...]string{"com.cn.", "net.cn.",".ac.cn",".org.cn",".gov.cn",".mil.cn",".edu.cn"}
+var SpecialDomains = [...]string{"com.cn.", "net.cn.", ".ac.cn.", ".org.cn.", ".gov.cn.", ".mil.cn.", ".edu.cn."}
 
 const (
 	defaultTtl     = 360
 	transferLength = 1000
+	blacklistKey   = "_dns_blacklist"
+	whitelistKey   = "_dns_whitelist"
 )
