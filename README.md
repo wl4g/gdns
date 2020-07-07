@@ -1,15 +1,17 @@
-*redis* enables reading zone data from redis database.
+*coredns-redisc* enables reading zone data from redis database.
 this plugin should be located right next to *etcd* in *plugins.cfg*
+
+[Quick installation](./INSTALL.md)
 
 ## syntax
 
 ~~~
-redis
+coredns-redisc
 ~~~
 
-redis loads authoritative zones from redis server
+coredns-redisc loads authoritative zones from redis cluster server
 
-Address will default to local redis server (localhost:6379)
+Address will default to local redis cluster server (localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381)
 ~~~
 redis {
     address ADDR
@@ -22,19 +24,18 @@ redis {
 }
 ~~~
 
-* `address` is redis server address to connect in the form of *host:port* or *ip:port*.
-* `password` is redis server *auth* key
-* `connect_timeout` time in ms to wait for redis server to connect
-* `read_timeout` time in ms to wait for redis server to respond
+* `address` is redis cluster server address to connect in the form of *host:port* or *ip:port*.
+* `password` is redis cluster server *auth* key
+* `connect_timeout` time in ms to wait for redis cluster server to connect
+* `read_timeout` time in ms to wait for redis cluster server to respond
 * `ttl` default ttl for dns records, 300 if not provided
-* `prefix` add PREFIX to all redis keys
-* `suffix` add SUFFIX to all redis keys
+* `prefix` add PREFIX to all redis cluster keys
 
 ## examples
 
 ~~~ corefile
 . {
-    redis example.com {
+    coredns-redisc example.com {
         address localhost:6379
         password foobared
         connect_timeout 100
@@ -53,11 +54,11 @@ reverse zones is not supported yet
 
 proxy is not supported yet
 
-## zone format in redis db
+## zone format in coredns-redisc db
 
 ### zones
 
-each zone is stored in redis as a hash map with *zone* as key
+each zone is stored in coredns-redisc as a hash map with *zone* as key
 
 ~~~
 redis-cli>KEYS *
@@ -68,7 +69,7 @@ redis-cli>
 
 ### dns RRs 
 
-dns RRs are stored in redis as json strings inside a hash map using address as field key.
+dns RRs are stored in redis cluster as json strings inside a hash map using address as field key.
 *@* is used for zone's own RR values.
 
 #### A
