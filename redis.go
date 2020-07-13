@@ -2,11 +2,12 @@ package redis
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/miekg/dns"
-	"strings"
-	"time"
 
 	redisCon "github.com/go-redis/redis/v7"
 )
@@ -20,10 +21,10 @@ type Redis struct {
 	redisPassword  string
 	connectTimeout int
 	readTimeout    int
+	writeTimeout   int
 	keyPrefix      string
 	keySuffix      string
 	Ttl            uint32
-	//Zones          []string
 	LastZoneUpdate time.Time
 }
 
@@ -385,14 +386,14 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	log.Info("connecting to redis.........")
+	log.Info("Connecting to redis.........")
 
 	redisAddress := strings.Split(redis.redisAddress, ",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
 		Addrs:        redisAddress,
 		Password:     redis.redisPassword, // 设置密码
 		DialTimeout:  5 * time.Second,     // 设置连接超时
-		ReadTimeout:  5 * time.Second,     // 设置读取超时
+		ReadTimeout:  10 * time.Second,    // 设置读取超时
 		WriteTimeout: 5 * time.Second,     // 设置写入超时
 		MaxRetries:   8,
 		PoolSize:     4,
@@ -478,11 +479,9 @@ func split255(s string) []string {
 		} else {
 			sx = append(sx, s[p:])
 			break
-
 		}
 		p, i = p+255, i+255
 	}
-
 	return sx
 }
 

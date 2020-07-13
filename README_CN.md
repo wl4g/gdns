@@ -1,10 +1,10 @@
-## A coredns enterprise-level plug-in that can obtain zone resolution records from redis-cluster, which can be integrated with super-cloudops [https://github.com/wl4g/super-cloudops](https://github.com/wl4g/ super-cloudops), providing a unified DevOps management web GUI
+## 一个coredns企业级插件，实现从redis-cluster获取zones解析记录，可与super-cloudops整合[https://github.com/wl4g/super-cloudops](https://github.com/wl4g/super-cloudops)，提供DevOps统一管理web GUI
 
-[中文说明/Chinese Documentation](./README.md)
+English version goes [here](./README.md)
 
-[Development docs](./INSTALL_CN.md)
+[二次开发](./INSTALL_CN.md)
 
-## 配置示例
+### 配置示例
 
 ```hocon
 . {
@@ -13,31 +13,31 @@
         password 123456
         connect_timeout 30000
         read_timeout 30000
-        ttl 300
+        ttl 360
         prefix _dns:
     }
 }
 ```
 
-* `address` is redis cluster server address to connect in the form of *host:port* or *ip:port*. default: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-* `password` is redis cluster server *auth* key, default: EMPTY
-* `connect_timeout` time in ms to wait for redis cluster server to connect, default: 30000ms
-* `read_timeout` time in ms to wait for redis cluster server to respond, default: 30000ms
-* `ttl` default ttl for dns records, 300 if not provided, default: 300sec
-* `prefix` add PREFIX to all redis cluster keys, default: EMPTY
+* `address` redis集群节点地址 host:port or ip:port，默认: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
+* `password` redis集群密码，默认：空
+* `connect_timeout` 连接超时时间，默认：30000ms
+* `read_timeout` 数据读取超时时间，默认：30000ms
+* `ttl` zones解析缓存ttl，默认：360sec
+* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认：空
 
 
-## reverse zones
+### 方向解析
 
-reverse zones is not supported yet
+目前暂不支持方向解析
 
-## proxy
+### 代理
 
-proxy is not supported yet
+目前暂不支持方向解析
 
-## zone format in coredns-redisc db
+### zones解析记录存储在redis-cluster的数据格式
 
-each zone is stored in coredns-redisc as a hash map with *zone* as key. Note: according to https://tools.ietf.org/html/rfc6763 specification, ending with a "." suffix. e.g:
+每个zone作为散列映射存储在redis-cluster中，以zone作为key。注：按照https://tools.ietf.org/html/rfc6763规约，以“.”后缀结尾。如：
 
 ```
 redis-cli>KEYS *
@@ -46,10 +46,9 @@ redis-cli>KEYS *
 redis-cli>
 ```
 
-### dns RRs
+#### dns RRs
 
-dns RRs are stored in redis cluster as json strings inside a hash map using address as field key.
-*@* is used for zone's own RR values.
+以json字符串格式存储在redis集群中，*@* 用于区域自身的RR值。如：
 
 #### A
 
@@ -159,7 +158,7 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 }
 ```
 
-#### example
+### 解析示例
 
 ```
 $ORIGIN example.net.
@@ -177,7 +176,7 @@ $ORIGIN example.net.
  host2.example.net                    CAA   0 issue "letsencrypt.org"
 ```
 
-above zone data should be stored at redis as follow:
+以上zones数据应存储在redis-cluster中，如下所示：
 
 ```
 redis-cli> hgetall example.net.
