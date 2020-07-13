@@ -16,6 +16,7 @@
 package redis
 
 import (
+	"encoding/json"
 	"fmt"
 	redisCon "github.com/go-redis/redis/v7"
 	"testing"
@@ -39,12 +40,28 @@ func TestRedisCollector(t *testing.T) {
 	hget := clusterClient.HGet("_dns:heweijie.top", "host").Val()
 	fmt.Println(hget)
 
-	vals := clusterClient.HKeys("_dns:heweijie.top.").Val();//_dns:heweijie.top.
+	vals := clusterClient.HKeys("_dns:heweijie.top.").Val() //_dns:heweijie.top.
 	fmt.Println(vals)
 
+	smembers := clusterClient.SMembers("_dns_blacklist").Val()
+	fmt.Println(smembers)
+
+	hGetAll := clusterClient.HGetAll("_dns:shangmai.com.").Val()
+	z := new(Zone)
+	z.Name = "shangmai.com"
+	z.Locations = make(map[string]*Record)
+	for key, val := range hGetAll{
+		r := new(Record)
+		err := json.Unmarshal([]byte(val), r)
+		if err != nil {
+			log.Error("parse config error ", val, err)
+			continue
+		}
+		z.Locations[key] = r
+	}
+	fmt.Println(z)
+
 }
-
-
 
 func TestQname2Zone(t *testing.T) {
 	s := Qname2Zone("host.heweijie.top.")
@@ -53,6 +70,16 @@ func TestQname2Zone(t *testing.T) {
 	fmt.Println(s)
 	s = Qname2Zone("heweijie.top.")
 	fmt.Println(s)
+}
+
+func TestSim(t *testing.T) {
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","fanyi.*.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.ba*u.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu*"))
 }
 
 

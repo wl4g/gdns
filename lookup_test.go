@@ -196,10 +196,9 @@ func newRedisPlugin() *Redis {
 
 	redis := new(Redis)
 	redis.keyPrefix = ""
-	redis.keySuffix = ""
-	redis.Ttl = 300
-	redis.redisAddress = "localhost:6379"
-	redis.redisPassword = ""
+	redis.ttl = 300
+	redis.address = "localhost:6379"
+	redis.password = ""
 	redis.Connect()
 	//redis.LoadZones()
 	return redis
@@ -220,7 +219,7 @@ func TestAnswer(t *testing.T) {
 	defer conn.Close()
 
 	for i, zone := range zones {
-		conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + zone + r.keySuffix)
+		conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + zone )
 		for _, cmd := range lookupEntries[i] {
 			err := r.save(zone, cmd[0], cmd[1])
 			if err != nil {

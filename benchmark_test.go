@@ -79,7 +79,7 @@ func BenchmarkHit(b *testing.B) {
 	r := newRedisPlugin()
 	conn := r.ClusterClient
 	defer conn.Close()
-	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*" + r.keySuffix)
+	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*")
 	for _, cmd := range benchmarkEntries {
 		err := r.save(zone, cmd[0], cmd[1])
 		if err != nil {
@@ -100,7 +100,7 @@ func BenchmarkMiss(b *testing.B) {
 	r := newRedisPlugin()
 	conn := r.ClusterClient
 	defer conn.Close()
-	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*" + r.keySuffix)
+	conn.Do("EVAL", "return redis.call('del', unpack(redis.call('keys', ARGV[1])))", 0, r.keyPrefix + "*")
 	for _, cmd := range benchmarkEntries {
 		err := r.save(zone, cmd[0], cmd[1])
 		if err != nil {

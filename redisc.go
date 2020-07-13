@@ -2,11 +2,12 @@ package redis
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/miekg/dns"
-	"strings"
-	"time"
 
 	redisCon "github.com/go-redis/redis/v7"
 )
@@ -16,15 +17,17 @@ var log = clog.NewWithPlugin("coredns-redisc")
 type Redis struct {
 	Next           plugin.Handler
 	ClusterClient  *redisCon.ClusterClient
-	redisAddress   string
-	redisPassword  string
-	connectTimeout int
-	readTimeout    int
+	address        string
+	password       string
+	connectTimeout time.Duration
+	readTimeout    time.Duration
+	writeTimeout   time.Duration
+	maxRetries     int
+	poolSize       int
+	ttl            uint32
 	keyPrefix      string
-	keySuffix      string
-	Ttl            uint32
-	//Zones          []string
-	LastZoneUpdate time.Time
+	localCacheExpireMs int64
+	LastZoneUpdate int64
 }
 
 func InterfaceToArray(i interface{}) []string {
@@ -148,13 +151,13 @@ func (redis *Redis) SOA(name string, z *Zone, record *Record) (answers, extras [
 	r := new(dns.SOA)
 	if record.SOA.Ns == "" {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeSOA,
-			Class: dns.ClassINET, Ttl: redis.Ttl}
+			Class: dns.ClassINET, Ttl: redis.ttl}
 		r.Ns = "ns1." + name
 		r.Mbox = "hostmaster." + name
 		r.Refresh = 86400
 		r.Retry = 7200
 		r.Expire = 3600
-		r.Minttl = redis.Ttl
+		r.Minttl = redis.ttl
 	} else {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(z.Name), Rrtype: dns.TypeSOA,
 			Class: dns.ClassINET, Ttl: redis.minTtl(record.SOA.Ttl)}
@@ -269,17 +272,11 @@ func (redis *Redis) serial() uint32 {
 }
 
 func (redis *Redis) minTtl(ttl uint32) uint32 {
-	if redis.Ttl == 0 && ttl == 0 {
-		return defaultTtl
-	}
-	if redis.Ttl == 0 {
-		return ttl
-	}
 	if ttl == 0 {
-		return redis.Ttl
+		return redis.ttl
 	}
-	if redis.Ttl < ttl {
-		return redis.Ttl
+	if redis.ttl < ttl {
+		return redis.ttl
 	}
 	return ttl
 }
@@ -319,34 +316,13 @@ func (redis *Redis) findLocation(query string, z *Zone) string {
 }
 
 func (redis *Redis) get(key string, z *Zone) *Record {
-	var (
-		err error
-		//reply interface{}
-		val string
-	)
-	conn := redis.ClusterClient
-	if conn == nil {
-		log.Error("error connecting to redis")
-		return nil
-	}
-	//defer conn.Close()
-
 	var label string
 	if key == z.Name {
 		label = "@"
 	} else {
 		label = key
 	}
-
-	val = conn.HGet(redis.keyPrefix+z.Name+redis.keySuffix, label).Val()
-	log.Debugf("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name+redis.keySuffix, label, val)
-
-	r := new(Record)
-	err = json.Unmarshal([]byte(val), r)
-	if err != nil {
-		log.Error("parse config error ", val, err)
-		return nil
-	}
+	r := z.Locations[label]
 	return r
 }
 
@@ -385,17 +361,28 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	log.Info("connecting to redis.........")
+	log.Infof("Connecting to redis cluster ... - for address: %s, password: %s, connectTimeout: %s, readTimeout: %s, writeTimeout: %s, maxRetries: %d, poolSize: %d, ttl: %d, keyPrefix: %s",
+		redis.address,
+		redis.password,
+		redis.connectTimeout,
+		redis.readTimeout,
+		redis.writeTimeout,
+		redis.maxRetries,
+		redis.poolSize,
+		redis.ttl,
+		redis.keyPrefix,
+	)
 
-	redisAddress := strings.Split(redis.redisAddress, ",")
+	_address := strings.Split(redis.address, ",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
-		Addrs:        redisAddress,
-		Password:     redis.redisPassword, // 设置密码
-		DialTimeout:  5 * time.Second,     // 设置连接超时
-		ReadTimeout:  5 * time.Second,     // 设置读取超时
-		WriteTimeout: 5 * time.Second,     // 设置写入超时
-		MaxRetries:   8,
-		PoolSize:     4,
+		Addrs:        _address,
+		Password:     redis.password,
+		DialTimeout:  redis.connectTimeout * time.Second,
+		ReadTimeout:  redis.readTimeout * time.Second,
+		WriteTimeout: redis.writeTimeout * time.Second,
+
+		MaxRetries:   redis.maxRetries,
+		PoolSize:     redis.poolSize,
 	})
 
 }
@@ -405,12 +392,12 @@ func (redis *Redis) save(zone string, subdomain string, value string) error {
 
 	conn := redis.ClusterClient
 	if conn == nil {
-		log.Error("error connecting to redis")
+		log.Error("Error connecting to redis")
 		return nil
 	}
 	//defer conn.Close()
 
-	err = conn.HSet(redis.keyPrefix+zone+redis.keySuffix, subdomain, value).Err()
+	err = conn.HSet(redis.keyPrefix+zone, subdomain, value).Err()
 	return err
 }
 
@@ -421,19 +408,82 @@ func (redis *Redis) load(zone string) *Zone {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	//defer conn.Close()
 
-	vals := conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val()
-	log.Infof("load HKEYS: %s vals:%s", redis.keyPrefix+zone+redis.keySuffix, vals)
+	//redis.autoCleanCache()
+
+	hGetAll,err := conn.HGetAll(redis.keyPrefix + zone).Result();
+
+	if err != nil || len(hGetAll) == 0{
+		//load cache
+		z := localCache[zone]
+		if z != nil {
+			return z
+		}
+	}
+
 
 	z := new(Zone)
 	z.Name = zone
-	z.Locations = make(map[string]struct{})
-	for _, val := range vals {
-		z.Locations[val] = struct{}{}
+	z.Locations = make(map[string]*Record)
+	for key, val := range hGetAll{
+		log.Infof("HGetAll from Redis: %s val:%s", key, val)
+		r := new(Record)
+		err := json.Unmarshal([]byte(val), r)
+		if err != nil {
+			log.Error("parse config error ", val, err)
+			continue
+		}
+		z.Locations[key] = r
 	}
+	//save cache
+	localCache[zone] = z
 
 	return z
+}
+
+func (redis *Redis) autoCleanCache() {
+	bet := time.Now().UnixNano() / 1e6-redis.LastZoneUpdate
+	log.Infof("time=%d  localCacheExpireMs=%d",bet,redis.localCacheExpireMs)
+	if bet>redis.localCacheExpireMs {
+		localCache = map[string]*Zone{}
+		redis.LastZoneUpdate = time.Now().UnixNano() / 1e6
+	}
+}
+
+func (redis *Redis) GetBlacklist() []string {
+	conn := redis.ClusterClient
+	if conn == nil {
+		log.Error("error connecting to redis")
+		return nil
+	}
+	_key := redis.getCacheKey(blacklistKeySuffix)
+	smembers, err := conn.SMembers(_key).Result()
+	if err != nil {
+		log.Error("error get dns blacklist", err)
+		return nil
+	}
+	log.Debugf("GetBlacklist: %s vals:%s", _key, smembers)
+	return smembers
+}
+
+func (redis *Redis) GetWhitelist() []string {
+	conn := redis.ClusterClient
+	if conn == nil {
+		log.Error("error connecting to redis")
+		return nil
+	}
+	_key := redis.getCacheKey(whitelistKeySuffix)
+	smembers, err := conn.SMembers(_key).Result()
+	if err != nil {
+		log.Error("Error get dns whitelist", err)
+		return nil
+	}
+	log.Debugf("GetWhitelist: %s vals:%s", _key, smembers)
+	return smembers
+}
+
+func (redis *Redis) getCacheKey(suffix string) string {
+	return redis.keyPrefix + suffix
 }
 
 func split255(s string) []string {
@@ -448,34 +498,20 @@ func split255(s string) []string {
 		} else {
 			sx = append(sx, s[p:])
 			break
-
 		}
 		p, i = p+255, i+255
 	}
-
 	return sx
 }
 
-func Qname2Zone(pname string) string {
-	s := strings.Split(pname, ".")
-	if len(s) <= 3 {
-		return pname
-	} else { //>3
-		for i, _ := range SpecialDomains {
-			if strings.HasSuffix(pname, SpecialDomains[i]) {
-				d := strings.ReplaceAll(pname, SpecialDomains[i], "")
-				t := strings.Split(d, ".")
-				return t[len(t)-2] + "." + SpecialDomains[i]
-			}
-		}
-		return s[len(s)-3] + "." + s[len(s)-2] + "."
-	}
-}
+// Some special top-level domain names are defined here, because they have two
+// levels of top-level names, which need special treatment when dealing with DNS query.
+var SpecialDomains = [...]string{"com.cn.", "net.cn.", ".ac.cn.", ".org.cn.", ".gov.cn.", ".mil.cn.", ".edu.cn."}
 
-//这里仅包含中国类别域名,其实还有行政区域名,中文域名,这里暂时不作处理
-var SpecialDomains = [...]string{"com.cn.", "net.cn.",".ac.cn",".org.cn",".gov.cn",".mil.cn",".edu.cn"}
+var localCache map[string]*Zone = map[string]*Zone{}
 
 const (
-	defaultTtl     = 360
-	transferLength = 1000
+	transferLength     = 1000
+	blacklistKeySuffix = ":dns:blacklist"
+	whitelistKeySuffix = ":dns:whitelist"
 )

@@ -1,221 +1,217 @@
-*redis* enables reading zone data from redis database.
-this plugin should be located right next to *etcd* in *plugins.cfg*
+## A coredns enterprise-level plug-in that can obtain zone resolution records from redis-cluster, which can be integrated with super-cloudops [https://github.com/wl4g/super-cloudops](https://github.com/wl4g/ super-cloudops), provides DevOps unified management web GUI
 
-## syntax
+English version goes [here](./README.md)
 
-~~~
-redis
-~~~
+[Secondary Development] (./INSTALL_CN.md)
 
-redis loads authoritative zones from redis server
+### Configuration example
 
-Address will default to local redis server (localhost:6379)
-~~~
-redis {
-    address ADDR
-    password PWD
-    prefix PREFIX
-    suffix SUFFIX
-    connect_timeout TIMEOUT
-    read_timeout TIMEOUT
-    ttl TTL
-}
-~~~
+For more configuration items, please refer to the coredns official website. For example, we give a general example:
 
-* `address` is redis server address to connect in the form of *host:port* or *ip:port*.
-* `password` is redis server *auth* key
-* `connect_timeout` time in ms to wait for redis server to connect
-* `read_timeout` time in ms to wait for redis server to respond
-* `ttl` default ttl for dns records, 300 if not provided
-* `prefix` add PREFIX to all redis keys
-* `suffix` add SUFFIX to all redis keys
-
-## examples
-
-~~~ corefile
-. {
-    redis example.com {
-        address localhost:6379
-        password foobared
-        connect_timeout 100
-        read_timeout 100
+```hocon
+.:53 {
+    # Load zones records from local /etc/hosts.
+    hosts {
+        fallthrough
+    }
+    # Load zones records from redis-cluster.
+    coredns-redisc {
+        address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
+        password "123456"
+        connect_timeout 5000
+        read_timeout 10000
+        write_timeout 5000
+        max_retries 10
+        pool_size 10
         ttl 360
         prefix _dns:
     }
+    # Up recursive DNS query server list.
+    # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
+    forward. 8.8.8.8 114.114.114.114
+    log
 }
-~~~
+```
 
-## reverse zones
+* `address` redis cluster node address host:port or ip:port, default: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
+* `password` redis cluster password, default: empty
+* `connect_timeout` connection timeout time, default: 5000ms
+* `read_timeout` data read timeout, default: 10000ms
+* `write_timeout` data write timeout, default: 5000ms
+* `max_retries` Maximum number of retries, default: 10
+* `pool_size` redis connection pool size, default: 10
+* `ttl` zones resolve cache ttl, default: 360sec
+* `prefix` zone resolution record data is stored in redis-cluster key prefix, default: _dns:
 
-reverse zones is not supported yet
 
-## proxy
+### Direction analysis
 
-proxy is not supported yet
+Currently does not support direction resolution
 
-## zone format in redis db
+### Agent
 
-### zones
+Currently does not support direction resolution
 
-each zone is stored in redis as a hash map with *zone* as key
+### Zones parsing records are stored in redis-cluster data format
 
-~~~
+Each zone is stored as a hash map in redis-cluster, with zone as the key. Note: According to the https://tools.ietf.org/html/rfc6763 protocol, it ends with a "." suffix. Such as:
+
+```
 redis-cli>KEYS *
 1) "example.com."
 2) "example.net."
 redis-cli>
-~~~
+```
 
-### dns RRs 
+#### dns RRs
 
-dns RRs are stored in redis as json strings inside a hash map using address as field key.
-*@* is used for zone's own RR values.
+Stored in redis cluster in json string format, *@* is used for RR value of the region itself. Such as:
 
 #### A
 
-~~~json
+```json
 {
     "a":{
-        "ip" : "1.2.3.4",
-        "ttl" : 360
+        "ip": "1.2.3.4",
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### AAAA
 
-~~~json
+```json
 {
     "aaaa":{
-        "ip" : "::1",
-        "ttl" : 360
+        "ip": "::1",
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### CNAME
 
-~~~json
+```json
 {
     "cname":{
-        "host" : "x.example.com.",
-        "ttl" : 360
+        "host": "x.example.com.",
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### TXT
 
-~~~json
+```json
 {
-    "txt":{
-        "text" : "this is a text",
-        "ttl" : 360
+    "TXT":{
+        "text": "this is a text",
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### NS
 
-~~~json
+```json
 {
     "ns":{
-        "host" : "ns1.example.com.",
-        "ttl" : 360
+        "host": "ns1.example.com.",
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### MX
 
-~~~json
+```json
 {
     "mx":{
-        "host" : "mx1.example.com",
-        "priority" : 10,
-        "ttl" : 360
+        "host": "mx1.example.com",
+        "priority": 10,
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### SRV
 
-~~~json
+```json
 {
     "srv":{
-        "host" : "sip.example.com.",
-        "port" : 555,
-        "priority" : 10,
-        "weight" : 100,
-        "ttl" : 360
+        "host": "sip.example.com.",
+        "port": 555,
+        "priority": 10,
+        "weight": 100,
+        "ttl": 360
     }
 }
-~~~
+```
 
 #### SOA
 
-~~~json
+```json
 {
     "soa":{
-        "ttl" : 100,
-        "mbox" : "hostmaster.example.com.",
-        "ns" : "ns1.example.com.",
-        "refresh" : 44,
-        "retry" : 55,
-        "expire" : 66
+        "ttl": 100,
+        "mbox": "hostmaster.example.com.",
+        "ns": "ns1.example.com.",
+        "refresh": 44,
+        "retry": 55,
+        "expire": 66
     }
 }
-~~~
+```
 
 #### CAA
 
-~~~json
+```json
 {
     "caa":{
-        "flag" : 0,
-        "tag" : "issue",
-        "value" : "letsencrypt.org"
+        "flag": 0,
+        "tag": "issue",
+        "value": "letsencrypt.org"
     }
 }
-~~~
+```
 
-#### example
+### Parsing example
 
-~~~
+```
 $ORIGIN example.net.
- example.net.                 300 IN  SOA   <SOA RDATA>
- example.net.                 300     NS    ns1.example.net.
- example.net.                 300     NS    ns2.example.net.
- *.example.net.               300     TXT   "this is a wildcard"
- *.example.net.               300     MX    10 host1.example.net.
- sub.*.example.net.           300     TXT   "this is not a wildcard"
- host1.example.net.           300     A     5.5.5.5
- _ssh.tcp.host1.example.net.  300     SRV   <SRV RDATA>
- _ssh.tcp.host2.example.net.  300     SRV   <SRV RDATA>
- subdel.example.net.          300     NS    ns1.subdel.example.net.
- subdel.example.net.          300     NS    ns2.subdel.example.net.
- host2.example.net                    CAA   0 issue "letsencrypt.org"
-~~~
+ example.net. 300 IN SOA <SOA RDATA>
+ example.net. 300 NS ns1.example.net.
+ example.net. 300 NS ns2.example.net.
+ *.example.net. 300 TXT "this is a wildcard"
+ *.example.net. 300 MX 10 host1.example.net.
+ sub.*.example.net. 300 TXT "this is not a wildcard"
+ host1.example.net. 300 A 5.5.5.5
+ _ssh.tcp.host1.example.net. 300 SRV <SRV RDATA>
+ _ssh.tcp.host2.example.net. 300 SRV <SRV RDATA>
+ subdel.example.net. 300 NS ns1.subdel.example.net.
+ subdel.example.net. 300 NS ns2.subdel.example.net.
+ host2.example.net CAA 0 issue "letsencrypt.org"
+```
 
-above zone data should be stored at redis as follow:
+The above zone data should be stored in redis-cluster as follows:
 
-~~~
+```
 redis-cli> hgetall example.net.
  1) "_ssh._tcp.host1"
- 2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\":10,\"weight\":100}]}"
+ 2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\" :10,\"weight\":100}]}"
  3) "*"
- 4) "{\"txt\":[{\"ttl\":300, \"text\":\"this is a wildcard\"}],\"mx\":[{\"ttl\":300, \"host\":\"host1.example.net.\",\"preference\": 10}]}"
+ 4) "{\"txt\":[{\"ttl\":300, \"text\":\"this is a wildcard\"}],\"mx\":[{\"ttl\" :300, \"host\":\"host1.example.net.\",\"preference\": 10}]}"
  5) "host1"
  6) "{\"a\":[{\"ttl\":300, \"ip\":\"5.5.5.5\"}]}"
  7) "sub.*"
  8) "{\"txt\":[{\"ttl\":300, \"text\":\"this is not a wildcard\"}]}"
  9) "_ssh._tcp.host2"
-10) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\":10,\"weight\":100}]}"
+10) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\" :10,\"weight\":100}]}"
 11) "subdel"
-12) "{\"ns\":[{\"ttl\":300, \"host\":\"ns1.subdel.example.net.\"},{\"ttl\":300, \"host\":\"ns2.subdel.example.net.\"}]}"
+12) "{\"ns\":[{\"ttl\":300, \"host\":\"ns1.subdel.example.net.\"},{\"ttl\":300, \ "host\":\"ns2.subdel.example.net.\"}]}"
 13) "@"
-14) "{\"soa\":{\"ttl\":300, \"minttl\":100, \"mbox\":\"hostmaster.example.net.\",\"ns\":\"ns1.example.net.\",\"refresh\":44,\"retry\":55,\"expire\":66},\"ns\":[{\"ttl\":300, \"host\":\"ns1.example.net.\"},{\"ttl\":300, \"host\":\"ns2.example.net.\"}]}"
+14) "{\"soa\":{\"ttl\":300, \"minttl\":100, \"mbox\":\"hostmaster.example.net.\",\"ns\": \"ns1.example.net.\",\"refresh\":44,\"retry\":55,\"expire\":66},\"ns\":[{\"ttl\": 300, \"host\":\"ns1.example.net.\"},{\"ttl\":300, \"host\":\"ns2.example.net.\"}]}"
 15) "host2"
 16)"{\"caa\":[{\"flag\":0, \"tag\":\"issue\", \"value\":\"letsencrypt.org\"}]}"
 redis-cli>
-~~~
+```

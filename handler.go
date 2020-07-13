@@ -2,7 +2,6 @@ package redis
 
 import (
 	"fmt"
-
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
@@ -18,13 +17,19 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 
 	zone := Qname2Zone(qname)
 
+	//Blacklist use this way
+	access := redis.filter(qname)
+	if !access {
+		return dns.RcodeRefused, nil
+	}
+
 	if zone == "" {
 		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
 	}
 
 	z := redis.load(zone)
 	if z == nil {
-		return redis.errorResponse(state, zone, dns.RcodeServerFailure, nil)
+		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
 	}
 
 	if qtype == "AXFR" {
@@ -61,13 +66,17 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 
 	location := redis.findLocation(qname, z)
 	if len(location) == 0 { // empty, no results
-		return redis.errorResponse(state, zone, dns.RcodeNameError, nil)
+		//return redis.errorResponse(state, zone, dns.RcodeNameError, nil)
+		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
 	}
 
 	answers := make([]dns.RR, 0, 10)
 	extras := make([]dns.RR, 0, 10)
 
 	record := redis.get(location, z)
+	if record == nil {
+		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+	}
 
 	switch qtype {
 	case "A":
@@ -107,7 +116,7 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 // Name implements the Handler interface.
-func (redis *Redis) Name() string { return "redis" }
+func (redis *Redis) Name() string { return PluginName }
 
 func (redis *Redis) errorResponse(state request.Request, zone string, rcode int, err error) (int, error) {
 	m := new(dns.Msg)
@@ -118,4 +127,27 @@ func (redis *Redis) errorResponse(state request.Request, zone string, rcode int,
 	_ = state.W.WriteMsg(m)
 	// Return success as the rcode to signal we have written to the client.
 	return dns.RcodeSuccess, err
+}
+
+// blacklist and whitelist
+func (redis *Redis) filter(qname string) bool {
+	if len(qname) <= 0 {
+		return false
+	}
+	qname = qname[0 : len(qname)-1]
+	whitelistExp := redis.GetWhitelist()
+	blacklistExp := redis.GetBlacklist()
+	for _, expression := range whitelistExp {
+		match := ExpressionMatch(qname, expression)
+		if match {
+			return true
+		}
+	}
+	for _, expression := range blacklistExp {
+		match := ExpressionMatch(qname, expression)
+		if match {
+			return false
+		}
+	}
+	return true
 }
