@@ -6,11 +6,18 @@ English version goes [here](./README.md)
 
 ### Configuration example
 
+For more configuration items, please refer to the coredns official website. For example, we give a general example:
+
 ```hocon
-. {
-    coredns-redisc example.com {
+.:53 {
+    # Load zones records from local /etc/hosts.
+    hosts {
+        fallthrough
+    }
+    # Load zones records from redis-cluster.
+    coredns-redisc {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-        password 123456
+        password "123456"
         connect_timeout 5000
         read_timeout 10000
         write_timeout 5000
@@ -19,6 +26,10 @@ English version goes [here](./README.md)
         ttl 360
         prefix _dns:
     }
+    # Up recursive DNS query server list.
+    # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
+    forward. 8.8.8.8 114.114.114.114
+    log
 }
 ```
 

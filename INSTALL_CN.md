@@ -28,29 +28,9 @@ SYSTEM:=GOOS=darwin GOARCH=amd64
 
 #### 4，配置文件Corefile
 
-更多配置项可参考coredns官网查看，如 我们给出常规示例：
+更多配置项可参考coredns官网查看，如：
 
-```
-.:53 {
-    # Load zones records from local /etc/hosts.
-    hosts {
-        fallthrough
-    }
-    # Load zones records from redis-cluster.
-    coredns-redisc {
-        address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-        password "123456"
-        connect_timeout 30000
-        read_timeout 30000
-        ttl 360
-        prefix _dns:
-    }
-    # Up recursive DNS query server list.
-    # e.g. Google dns servers: 8.8.8.8，china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
-    forward . 8.8.8.8 114.114.114.114
-    log
-}
-```
+[我们给出常规示例](./README_CN.md#配置示例)
 
 #### 5，启动运行
 

@@ -2,6 +2,7 @@ package redis
 
 import (
 	"strconv"
+	"time"
 
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
@@ -43,9 +44,6 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 		ttl:            360,
 		keyPrefix:      "_dns:",
 	}
-	var (
-		err error
-	)
 
 	for c.Next() {
 		if c.NextBlock() {
@@ -71,7 +69,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 					}
 					_connectTimeout, err := strconv.Atoi(c.Val())
 					if err == nil {
-						redis.connectTimeout = _connectTimeout
+						redis.connectTimeout = time.Duration(_connectTimeout)
 					}
 				case "read_timeout":
 					if !c.NextArg() {
@@ -79,7 +77,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 					}
 					_readTimeout, err1 := strconv.Atoi(c.Val())
 					if err1 == nil {
-						redis.readTimeout = _readTimeout
+						redis.readTimeout = time.Duration(_readTimeout)
 					}
 				case "write_timeout":
 					if !c.NextArg() {
@@ -87,7 +85,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 					}
 					_writeTimeout, err2 := strconv.Atoi(c.Val())
 					if err2 == nil {
-						redis.writeTimeout = _writeTimeout
+						redis.writeTimeout = time.Duration(_writeTimeout)
 					}
 				case "max_retries":
 					if !c.NextArg() {

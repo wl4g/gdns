@@ -19,9 +19,9 @@ type Redis struct {
 	ClusterClient  *redisCon.ClusterClient
 	address        string
 	password       string
-	connectTimeout int
-	readTimeout    int
-	writeTimeout   int
+	connectTimeout time.Duration
+	readTimeout    time.Duration
+	writeTimeout   time.Duration
 	maxRetries     int
 	poolSize       int
 	ttl            uint32
@@ -48,7 +48,7 @@ func (redis *Redis) A(name string, z *Zone, record *Record) (answers, extras []d
 		}
 		r := new(dns.A)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeA,
-			Class: dns.ClassINET, ttl: redis.minttl(a.ttl)}
+			Class: dns.ClassINET, Ttl: redis.minTtl(a.Ttl)}
 		r.A = a.Ip
 		answers = append(answers, r)
 	}
@@ -150,13 +150,13 @@ func (redis *Redis) SOA(name string, z *Zone, record *Record) (answers, extras [
 	r := new(dns.SOA)
 	if record.SOA.Ns == "" {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeSOA,
-			Class: dns.ClassINET, Ttl: redis.Ttl}
+			Class: dns.ClassINET, Ttl: redis.ttl}
 		r.Ns = "ns1." + name
 		r.Mbox = "hostmaster." + name
 		r.Refresh = 86400
 		r.Retry = 7200
 		r.Expire = 3600
-		r.Minttl = redis.Ttl
+		r.Minttl = redis.ttl
 	} else {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(z.Name), Rrtype: dns.TypeSOA,
 			Class: dns.ClassINET, Ttl: redis.minTtl(record.SOA.Ttl)}
@@ -272,7 +272,7 @@ func (redis *Redis) serial() uint32 {
 
 func (redis *Redis) minTtl(ttl uint32) uint32 {
 	if ttl == 0 {
-		return redis.Ttl
+		return redis.ttl
 	}
 	if redis.ttl < ttl {
 		return redis.ttl
@@ -400,6 +400,7 @@ func (redis *Redis) Connect() {
 		DialTimeout:  redis.connectTimeout * time.Second,
 		ReadTimeout:  redis.readTimeout * time.Second,
 		WriteTimeout: redis.writeTimeout * time.Second,
+
 		MaxRetries:   redis.maxRetries,
 		PoolSize:     redis.poolSize,
 	})
@@ -448,7 +449,7 @@ func (redis *Redis) GetBlacklist() []string {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	_key := getCacheKey(blacklistKeySuffix)
+	_key := redis.getCacheKey(blacklistKeySuffix)
 	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
 		log.Error("error get dns blacklist", err)
@@ -464,7 +465,7 @@ func (redis *Redis) GetWhitelist() []string {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	_key := getCacheKey(whitelistKeySuffix)
+	_key := redis.getCacheKey(whitelistKeySuffix)
 	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
 		log.Error("Error get dns whitelist", err)
