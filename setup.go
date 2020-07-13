@@ -34,15 +34,16 @@ func setup(c *caddy.Controller) error {
 
 func redisParse(c *caddy.Controller) (*Redis, error) {
 	redis := Redis{
-		address:        "localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381",
-		password:       "",
-		connectTimeout: 5000,
-		readTimeout:    10000,
-		writeTimeout:   5000,
-		maxRetries:     10,
-		poolSize:       10,
-		ttl:            360,
-		keyPrefix:      "_dns:",
+		address:            "localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381",
+		password:           "",
+		connectTimeout:     5000,
+		readTimeout:        10000,
+		writeTimeout:       5000,
+		maxRetries:         10,
+		poolSize:           10,
+		ttl:                360,
+		keyPrefix:          "_dns:",
+		localCacheExpireMs: 30000,
 	}
 
 	for c.Next() {
@@ -117,6 +118,14 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 					}
 					if c.Val() != "" {
 						redis.keyPrefix = c.Val()
+					}
+				case "local_cache_expire_ms":
+					if !c.NextArg() {
+						return &Redis{}, c.ArgErr()
+					}
+					localCacheExpireMs, err6 := strconv.Atoi(c.Val())
+					if err6 != nil {
+						redis.localCacheExpireMs = int64(localCacheExpireMs)
 					}
 				default:
 					if c.Val() != "}" {

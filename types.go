@@ -4,7 +4,7 @@ import "net"
 
 type Zone struct {
 	Name      string
-	Locations map[string]struct{}
+	Locations map[string]*Record
 }
 
 type Record struct {

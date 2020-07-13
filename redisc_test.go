@@ -16,6 +16,7 @@
 package redis
 
 import (
+	"encoding/json"
 	"fmt"
 	redisCon "github.com/go-redis/redis/v7"
 	"testing"
@@ -45,6 +46,21 @@ func TestRedisCollector(t *testing.T) {
 	smembers := clusterClient.SMembers("_dns_blacklist").Val()
 	fmt.Println(smembers)
 
+	hGetAll := clusterClient.HGetAll("_dns:shangmai.com.").Val()
+	z := new(Zone)
+	z.Name = "shangmai.com"
+	z.Locations = make(map[string]*Record)
+	for key, val := range hGetAll{
+		r := new(Record)
+		err := json.Unmarshal([]byte(val), r)
+		if err != nil {
+			log.Error("parse config error ", val, err)
+			continue
+		}
+		z.Locations[key] = r
+	}
+	fmt.Println(z)
+
 }
 
 func TestQname2Zone(t *testing.T) {
@@ -67,7 +83,3 @@ func TestSim(t *testing.T) {
 }
 
 
-func TestAtoi(t *testing.T) {
-	n := nil
-	fmt.Println(strconv.Atoi(n)))
-}

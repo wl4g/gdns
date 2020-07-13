@@ -26,7 +26,8 @@ type Redis struct {
 	poolSize       int
 	ttl            uint32
 	keyPrefix      string
-	LastZoneUpdate time.Time
+	localCacheExpireMs int64
+	LastZoneUpdate int64
 }
 
 func InterfaceToArray(i interface{}) []string {
@@ -315,34 +316,13 @@ func (redis *Redis) findLocation(query string, z *Zone) string {
 }
 
 func (redis *Redis) get(key string, z *Zone) *Record {
-	var (
-		err error
-		//reply interface{}
-		val string
-	)
-	conn := redis.ClusterClient
-	if conn == nil {
-		log.Error("error connecting to redis")
-		return nil
-	}
-	//defer conn.Close()
-
 	var label string
 	if key == z.Name {
 		label = "@"
 	} else {
 		label = key
 	}
-
-	val = conn.HGet(redis.keyPrefix+z.Name, label).Val()
-	log.Debugf("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name, label, val)
-
-	r := new(Record)
-	err = json.Unmarshal([]byte(val), r)
-	if err != nil {
-		log.Error("parse config error ", val, err)
-		return nil
-	}
+	r := z.Locations[label]
 	return r
 }
 
@@ -381,7 +361,7 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	log.Infof("Connecting to redis cluster ... - for address: %s, password: %s, connectTimeout: %s, readTimeout: %s, writeTimeout: %s, maxRetries: %s, poolSize: %s, ttl: %s, keyPrefix: %s",
+	log.Infof("Connecting to redis cluster ... - for address: %s, password: %s, connectTimeout: %s, readTimeout: %s, writeTimeout: %s, maxRetries: %d, poolSize: %d, ttl: %d, keyPrefix: %s",
 		redis.address,
 		redis.password,
 		redis.connectTimeout,
@@ -428,19 +408,46 @@ func (redis *Redis) load(zone string) *Zone {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	//defer conn.Close()
 
-	vals := conn.HKeys(redis.keyPrefix + zone).Val()
-	log.Infof("load HKEYS: %s vals:%s", redis.keyPrefix+zone, vals)
+	//redis.autoCleanCache()
+
+	hGetAll,err := conn.HGetAll(redis.keyPrefix + zone).Result();
+
+	if err != nil || len(hGetAll) == 0{
+		//load cache
+		z := localCache[zone]
+		if z != nil {
+			return z
+		}
+	}
+
 
 	z := new(Zone)
 	z.Name = zone
-	z.Locations = make(map[string]struct{})
-	for _, val := range vals {
-		z.Locations[val] = struct{}{}
+	z.Locations = make(map[string]*Record)
+	for key, val := range hGetAll{
+		log.Infof("HGetAll from Redis: %s val:%s", key, val)
+		r := new(Record)
+		err := json.Unmarshal([]byte(val), r)
+		if err != nil {
+			log.Error("parse config error ", val, err)
+			continue
+		}
+		z.Locations[key] = r
 	}
+	//save cache
+	localCache[zone] = z
 
 	return z
+}
+
+func (redis *Redis) autoCleanCache() {
+	bet := time.Now().UnixNano() / 1e6-redis.LastZoneUpdate
+	log.Infof("time=%d  localCacheExpireMs=%d",bet,redis.localCacheExpireMs)
+	if bet>redis.localCacheExpireMs {
+		localCache = map[string]*Zone{}
+		redis.LastZoneUpdate = time.Now().UnixNano() / 1e6
+	}
 }
 
 func (redis *Redis) GetBlacklist() []string {
@@ -500,6 +507,8 @@ func split255(s string) []string {
 // Some special top-level domain names are defined here, because they have two
 // levels of top-level names, which need special treatment when dealing with DNS query.
 var SpecialDomains = [...]string{"com.cn.", "net.cn.", ".ac.cn.", ".org.cn.", ".gov.cn.", ".mil.cn.", ".edu.cn."}
+
+var localCache map[string]*Zone = map[string]*Zone{}
 
 const (
 	transferLength     = 1000
