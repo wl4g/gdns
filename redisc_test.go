@@ -67,3 +67,7 @@ func TestSim(t *testing.T) {
 }
 
 
+func TestAtoi(t *testing.T) {
+	n := nil
+	fmt.Println(strconv.Atoi(n)))
+}

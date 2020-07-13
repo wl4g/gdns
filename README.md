@@ -1,43 +1,49 @@
-## A coredns enterprise-level plug-in that can obtain zone resolution records from redis-cluster, which can be integrated with super-cloudops [https://github.com/wl4g/super-cloudops](https://github.com/wl4g/ super-cloudops), providing a unified DevOps management web GUI
+## A coredns enterprise-level plug-in that can obtain zone resolution records from redis-cluster, which can be integrated with super-cloudops [https://github.com/wl4g/super-cloudops](https://github.com/wl4g/ super-cloudops), provides DevOps unified management web GUI
 
-[中文说明/Chinese Documentation](./README.md)
+English version goes [here](./README.md)
 
-[Development docs](./INSTALL_CN.md)
+[Secondary Development] (./INSTALL_CN.md)
 
-## 配置示例
+### Configuration example
 
 ```hocon
 . {
     coredns-redisc example.com {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password 123456
-        connect_timeout 30000
-        read_timeout 30000
-        ttl 300
+        connect_timeout 5000
+        read_timeout 10000
+        write_timeout 5000
+        max_retries 10
+        pool_size 10
+        ttl 360
         prefix _dns:
     }
 }
 ```
 
-* `address` is redis cluster server address to connect in the form of *host:port* or *ip:port*. default: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-* `password` is redis cluster server *auth* key, default: EMPTY
-* `connect_timeout` time in ms to wait for redis cluster server to connect, default: 30000ms
-* `read_timeout` time in ms to wait for redis cluster server to respond, default: 30000ms
-* `ttl` default ttl for dns records, 300 if not provided, default: 300sec
-* `prefix` add PREFIX to all redis cluster keys, default: EMPTY
+* `address` redis cluster node address host:port or ip:port, default: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
+* `password` redis cluster password, default: empty
+* `connect_timeout` connection timeout time, default: 5000ms
+* `read_timeout` data read timeout, default: 10000ms
+* `write_timeout` data write timeout, default: 5000ms
+* `max_retries` Maximum number of retries, default: 10
+* `pool_size` redis connection pool size, default: 10
+* `ttl` zones resolve cache ttl, default: 360sec
+* `prefix` zone resolution record data is stored in redis-cluster key prefix, default: _dns:
 
 
-## reverse zones
+### Direction analysis
 
-reverse zones is not supported yet
+Currently does not support direction resolution
 
-## proxy
+### Agent
 
-proxy is not supported yet
+Currently does not support direction resolution
 
-## zone format in coredns-redisc db
+### Zones parsing records are stored in redis-cluster data format
 
-each zone is stored in coredns-redisc as a hash map with *zone* as key. Note: according to https://tools.ietf.org/html/rfc6763 specification, ending with a "." suffix. e.g:
+Each zone is stored as a hash map in redis-cluster, with zone as the key. Note: According to the https://tools.ietf.org/html/rfc6763 protocol, it ends with a "." suffix. Such as:
 
 ```
 redis-cli>KEYS *
@@ -46,18 +52,17 @@ redis-cli>KEYS *
 redis-cli>
 ```
 
-### dns RRs
+#### dns RRs
 
-dns RRs are stored in redis cluster as json strings inside a hash map using address as field key.
-*@* is used for zone's own RR values.
+Stored in redis cluster in json string format, *@* is used for RR value of the region itself. Such as:
 
 #### A
 
 ```json
 {
     "a":{
-        "ip" : "1.2.3.4",
-        "ttl" : 360
+        "ip": "1.2.3.4",
+        "ttl": 360
     }
 }
 ```
@@ -67,8 +72,8 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "aaaa":{
-        "ip" : "::1",
-        "ttl" : 360
+        "ip": "::1",
+        "ttl": 360
     }
 }
 ```
@@ -78,8 +83,8 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "cname":{
-        "host" : "x.example.com.",
-        "ttl" : 360
+        "host": "x.example.com.",
+        "ttl": 360
     }
 }
 ```
@@ -88,9 +93,9 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 
 ```json
 {
-    "txt":{
-        "text" : "this is a text",
-        "ttl" : 360
+    "TXT":{
+        "text": "this is a text",
+        "ttl": 360
     }
 }
 ```
@@ -100,8 +105,8 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "ns":{
-        "host" : "ns1.example.com.",
-        "ttl" : 360
+        "host": "ns1.example.com.",
+        "ttl": 360
     }
 }
 ```
@@ -111,9 +116,9 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "mx":{
-        "host" : "mx1.example.com",
-        "priority" : 10,
-        "ttl" : 360
+        "host": "mx1.example.com",
+        "priority": 10,
+        "ttl": 360
     }
 }
 ```
@@ -123,11 +128,11 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "srv":{
-        "host" : "sip.example.com.",
-        "port" : 555,
-        "priority" : 10,
-        "weight" : 100,
-        "ttl" : 360
+        "host": "sip.example.com.",
+        "port": 555,
+        "priority": 10,
+        "weight": 100,
+        "ttl": 360
     }
 }
 ```
@@ -137,12 +142,12 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "soa":{
-        "ttl" : 100,
-        "mbox" : "hostmaster.example.com.",
-        "ns" : "ns1.example.com.",
-        "refresh" : 44,
-        "retry" : 55,
-        "expire" : 66
+        "ttl": 100,
+        "mbox": "hostmaster.example.com.",
+        "ns": "ns1.example.com.",
+        "refresh": 44,
+        "retry": 55,
+        "expire": 66
     }
 }
 ```
@@ -152,49 +157,49 @@ dns RRs are stored in redis cluster as json strings inside a hash map using addr
 ```json
 {
     "caa":{
-        "flag" : 0,
-        "tag" : "issue",
-        "value" : "letsencrypt.org"
+        "flag": 0,
+        "tag": "issue",
+        "value": "letsencrypt.org"
     }
 }
 ```
 
-#### example
+### Parsing example
 
 ```
 $ORIGIN example.net.
- example.net.                 300 IN  SOA   <SOA RDATA>
- example.net.                 300     NS    ns1.example.net.
- example.net.                 300     NS    ns2.example.net.
- *.example.net.               300     TXT   "this is a wildcard"
- *.example.net.               300     MX    10 host1.example.net.
- sub.*.example.net.           300     TXT   "this is not a wildcard"
- host1.example.net.           300     A     5.5.5.5
- _ssh.tcp.host1.example.net.  300     SRV   <SRV RDATA>
- _ssh.tcp.host2.example.net.  300     SRV   <SRV RDATA>
- subdel.example.net.          300     NS    ns1.subdel.example.net.
- subdel.example.net.          300     NS    ns2.subdel.example.net.
- host2.example.net                    CAA   0 issue "letsencrypt.org"
+ example.net. 300 IN SOA <SOA RDATA>
+ example.net. 300 NS ns1.example.net.
+ example.net. 300 NS ns2.example.net.
+ *.example.net. 300 TXT "this is a wildcard"
+ *.example.net. 300 MX 10 host1.example.net.
+ sub.*.example.net. 300 TXT "this is not a wildcard"
+ host1.example.net. 300 A 5.5.5.5
+ _ssh.tcp.host1.example.net. 300 SRV <SRV RDATA>
+ _ssh.tcp.host2.example.net. 300 SRV <SRV RDATA>
+ subdel.example.net. 300 NS ns1.subdel.example.net.
+ subdel.example.net. 300 NS ns2.subdel.example.net.
+ host2.example.net CAA 0 issue "letsencrypt.org"
 ```
 
-above zone data should be stored at redis as follow:
+The above zone data should be stored in redis-cluster as follows:
 
 ```
 redis-cli> hgetall example.net.
  1) "_ssh._tcp.host1"
- 2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\":10,\"weight\":100}]}"
+ 2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\" :10,\"weight\":100}]}"
  3) "*"
- 4) "{\"txt\":[{\"ttl\":300, \"text\":\"this is a wildcard\"}],\"mx\":[{\"ttl\":300, \"host\":\"host1.example.net.\",\"preference\": 10}]}"
+ 4) "{\"txt\":[{\"ttl\":300, \"text\":\"this is a wildcard\"}],\"mx\":[{\"ttl\" :300, \"host\":\"host1.example.net.\",\"preference\": 10}]}"
  5) "host1"
  6) "{\"a\":[{\"ttl\":300, \"ip\":\"5.5.5.5\"}]}"
  7) "sub.*"
  8) "{\"txt\":[{\"ttl\":300, \"text\":\"this is not a wildcard\"}]}"
  9) "_ssh._tcp.host2"
-10) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\":10,\"weight\":100}]}"
+10) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\" :10,\"weight\":100}]}"
 11) "subdel"
-12) "{\"ns\":[{\"ttl\":300, \"host\":\"ns1.subdel.example.net.\"},{\"ttl\":300, \"host\":\"ns2.subdel.example.net.\"}]}"
+12) "{\"ns\":[{\"ttl\":300, \"host\":\"ns1.subdel.example.net.\"},{\"ttl\":300, \ "host\":\"ns2.subdel.example.net.\"}]}"
 13) "@"
-14) "{\"soa\":{\"ttl\":300, \"minttl\":100, \"mbox\":\"hostmaster.example.net.\",\"ns\":\"ns1.example.net.\",\"refresh\":44,\"retry\":55,\"expire\":66},\"ns\":[{\"ttl\":300, \"host\":\"ns1.example.net.\"},{\"ttl\":300, \"host\":\"ns2.example.net.\"}]}"
+14) "{\"soa\":{\"ttl\":300, \"minttl\":100, \"mbox\":\"hostmaster.example.net.\",\"ns\": \"ns1.example.net.\",\"refresh\":44,\"retry\":55,\"expire\":66},\"ns\":[{\"ttl\": 300, \"host\":\"ns1.example.net.\"},{\"ttl\":300, \"host\":\"ns2.example.net.\"}]}"
 15) "host2"
 16)"{\"caa\":[{\"flag\":0, \"tag\":\"issue\", \"value\":\"letsencrypt.org\"}]}"
 redis-cli>

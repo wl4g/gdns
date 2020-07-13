@@ -17,14 +17,15 @@ var log = clog.NewWithPlugin("coredns-redisc")
 type Redis struct {
 	Next           plugin.Handler
 	ClusterClient  *redisCon.ClusterClient
-	redisAddress   string
-	redisPassword  string
+	address        string
+	password       string
 	connectTimeout int
 	readTimeout    int
 	writeTimeout   int
+	maxRetries     int
+	poolSize       int
+	ttl            uint32
 	keyPrefix      string
-	keySuffix      string
-	Ttl            uint32
 	LastZoneUpdate time.Time
 }
 
@@ -47,7 +48,7 @@ func (redis *Redis) A(name string, z *Zone, record *Record) (answers, extras []d
 		}
 		r := new(dns.A)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeA,
-			Class: dns.ClassINET, Ttl: redis.minTtl(a.Ttl)}
+			Class: dns.ClassINET, ttl: redis.minttl(a.ttl)}
 		r.A = a.Ip
 		answers = append(answers, r)
 	}
@@ -270,17 +271,11 @@ func (redis *Redis) serial() uint32 {
 }
 
 func (redis *Redis) minTtl(ttl uint32) uint32 {
-	if redis.Ttl == 0 && ttl == 0 {
-		return defaultTtl
-	}
-	if redis.Ttl == 0 {
-		return ttl
-	}
 	if ttl == 0 {
 		return redis.Ttl
 	}
-	if redis.Ttl < ttl {
-		return redis.Ttl
+	if redis.ttl < ttl {
+		return redis.ttl
 	}
 	return ttl
 }
@@ -339,8 +334,8 @@ func (redis *Redis) get(key string, z *Zone) *Record {
 		label = key
 	}
 
-	val = conn.HGet(redis.keyPrefix+z.Name+redis.keySuffix, label).Val()
-	log.Debugf("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name+redis.keySuffix, label, val)
+	val = conn.HGet(redis.keyPrefix+z.Name, label).Val()
+	log.Debugf("HGet: %s label: %s val: %s", redis.keyPrefix+z.Name, label, val)
 
 	r := new(Record)
 	err = json.Unmarshal([]byte(val), r)
@@ -386,17 +381,27 @@ func splitQuery(query string) (string, string, bool) {
 }
 
 func (redis *Redis) Connect() {
-	log.Info("Connecting to redis.........")
+	log.Infof("Connecting to redis cluster ... - for address: %s, password: %s, connectTimeout: %s, readTimeout: %s, writeTimeout: %s, maxRetries: %s, poolSize: %s, ttl: %s, keyPrefix: %s",
+		redis.address,
+		redis.password,
+		redis.connectTimeout,
+		redis.readTimeout,
+		redis.writeTimeout,
+		redis.maxRetries,
+		redis.poolSize,
+		redis.ttl,
+		redis.keyPrefix,
+	)
 
-	redisAddress := strings.Split(redis.redisAddress, ",")
+	_address := strings.Split(redis.address, ",")
 	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
-		Addrs:        redisAddress,
-		Password:     redis.redisPassword, // 设置密码
-		DialTimeout:  5 * time.Second,     // 设置连接超时
-		ReadTimeout:  10 * time.Second,    // 设置读取超时
-		WriteTimeout: 5 * time.Second,     // 设置写入超时
-		MaxRetries:   8,
-		PoolSize:     4,
+		Addrs:        _address,
+		Password:     redis.password,
+		DialTimeout:  redis.connectTimeout * time.Second,
+		ReadTimeout:  redis.readTimeout * time.Second,
+		WriteTimeout: redis.writeTimeout * time.Second,
+		MaxRetries:   redis.maxRetries,
+		PoolSize:     redis.poolSize,
 	})
 
 }
@@ -406,12 +411,12 @@ func (redis *Redis) save(zone string, subdomain string, value string) error {
 
 	conn := redis.ClusterClient
 	if conn == nil {
-		log.Error("error connecting to redis")
+		log.Error("Error connecting to redis")
 		return nil
 	}
 	//defer conn.Close()
 
-	err = conn.HSet(redis.keyPrefix+zone+redis.keySuffix, subdomain, value).Err()
+	err = conn.HSet(redis.keyPrefix+zone, subdomain, value).Err()
 	return err
 }
 
@@ -424,8 +429,8 @@ func (redis *Redis) load(zone string) *Zone {
 	}
 	//defer conn.Close()
 
-	vals := conn.HKeys(redis.keyPrefix + zone + redis.keySuffix).Val()
-	log.Infof("load HKEYS: %s vals:%s", redis.keyPrefix+zone+redis.keySuffix, vals)
+	vals := conn.HKeys(redis.keyPrefix + zone).Val()
+	log.Infof("load HKEYS: %s vals:%s", redis.keyPrefix+zone, vals)
 
 	z := new(Zone)
 	z.Name = zone
@@ -443,12 +448,13 @@ func (redis *Redis) GetBlacklist() []string {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	smembers, err := conn.SMembers(blacklistKey).Result()
+	_key := getCacheKey(blacklistKeySuffix)
+	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
-		log.Error("error get SMembers", err)
+		log.Error("error get dns blacklist", err)
 		return nil
 	}
-	log.Debugf("GetBlacklist: %s vals:%s", blacklistKey, smembers)
+	log.Debugf("GetBlacklist: %s vals:%s", _key, smembers)
 	return smembers
 }
 
@@ -458,13 +464,18 @@ func (redis *Redis) GetWhitelist() []string {
 		log.Error("error connecting to redis")
 		return nil
 	}
-	smembers, err := conn.SMembers(whitelistKey).Result()
+	_key := getCacheKey(whitelistKeySuffix)
+	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
-		log.Error("error get SMembers", err)
+		log.Error("Error get dns whitelist", err)
 		return nil
 	}
-	log.Debugf("GetWhitelist: %s vals:%s", whitelistKey, smembers)
+	log.Debugf("GetWhitelist: %s vals:%s", _key, smembers)
 	return smembers
+}
+
+func (redis *Redis) getCacheKey(suffix string) string {
+	return redis.keyPrefix + suffix
 }
 
 func split255(s string) []string {
@@ -485,12 +496,12 @@ func split255(s string) []string {
 	return sx
 }
 
-//这里仅包含中国类别域名,其实还有行政区域名,中文域名,这里暂时不作处理
+// Some special top-level domain names are defined here, because they have two
+// levels of top-level names, which need special treatment when dealing with DNS query.
 var SpecialDomains = [...]string{"com.cn.", "net.cn.", ".ac.cn.", ".org.cn.", ".gov.cn.", ".mil.cn.", ".edu.cn."}
 
 const (
-	defaultTtl     = 360
-	transferLength = 1000
-	blacklistKey   = "_dns_blacklist"
-	whitelistKey   = "_dns_whitelist"
+	transferLength     = 1000
+	blacklistKeySuffix = ":dns:blacklist"
+	whitelistKeySuffix = ":dns:whitelist"
 )

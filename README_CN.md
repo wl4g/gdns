@@ -11,8 +11,11 @@ English version goes [here](./README.md)
     coredns-redisc example.com {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password 123456
-        connect_timeout 30000
-        read_timeout 30000
+        connect_timeout 5000
+        read_timeout 10000
+        write_timeout 5000
+        max_retries 10
+        pool_size 10
         ttl 360
         prefix _dns:
     }
@@ -21,10 +24,13 @@ English version goes [here](./README.md)
 
 * `address` redis集群节点地址 host:port or ip:port，默认: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
 * `password` redis集群密码，默认：空
-* `connect_timeout` 连接超时时间，默认：30000ms
-* `read_timeout` 数据读取超时时间，默认：30000ms
+* `connect_timeout` 连接超时时间，默认：5000ms
+* `read_timeout` 数据读取超时时间，默认：10000ms
+* `write_timeout` 数据写入超时时间，默认：5000ms
+* `max_retries` 最大重试次数，默认：10
+* `pool_size` redis连接池大小，默认：10
 * `ttl` zones解析缓存ttl，默认：360sec
-* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认：空
+* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认：_dns:
 
 
 ### 方向解析

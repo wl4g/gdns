@@ -31,15 +31,20 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-
 func redisParse(c *caddy.Controller) (*Redis, error) {
-	redis := Redis {
-		keyPrefix:"",
-		keySuffix:"",
-		Ttl:300,
+	redis := Redis{
+		address:        "localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381",
+		password:       "",
+		connectTimeout: 5000,
+		readTimeout:    10000,
+		writeTimeout:   5000,
+		maxRetries:     10,
+		poolSize:       10,
+		ttl:            360,
+		keyPrefix:      "_dns:",
 	}
 	var (
-		err            error
+		err error
 	)
 
 	for c.Next() {
@@ -50,59 +55,80 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 					if !c.NextArg() {
 						return &Redis{}, c.ArgErr()
 					}
-					redis.redisAddress = c.Val()
+					if c.Val() != "" {
+						redis.address = c.Val()
+					}
 				case "password":
 					if !c.NextArg() {
 						return &Redis{}, c.ArgErr()
 					}
-					redis.redisPassword = c.Val()
-				case "prefix":
-					if !c.NextArg() {
-						return &Redis{}, c.ArgErr()
+					if c.Val() != "" {
+						redis.password = c.Val()
 					}
-					redis.keyPrefix = c.Val()
-				case "suffix":
-					if !c.NextArg() {
-						return &Redis{}, c.ArgErr()
-					}
-					redis.keySuffix = c.Val()
 				case "connect_timeout":
 					if !c.NextArg() {
 						return &Redis{}, c.ArgErr()
 					}
-					redis.connectTimeout, err = strconv.Atoi(c.Val())
-					if err != nil {
-						redis.connectTimeout = 0
+					_connectTimeout, err := strconv.Atoi(c.Val())
+					if err == nil {
+						redis.connectTimeout = _connectTimeout
 					}
 				case "read_timeout":
 					if !c.NextArg() {
 						return &Redis{}, c.ArgErr()
 					}
-					redis.readTimeout, err = strconv.Atoi(c.Val())
-					if err != nil {
-						redis.readTimeout = 0;
+					_readTimeout, err1 := strconv.Atoi(c.Val())
+					if err1 == nil {
+						redis.readTimeout = _readTimeout
+					}
+				case "write_timeout":
+					if !c.NextArg() {
+						return &Redis{}, c.ArgErr()
+					}
+					_writeTimeout, err2 := strconv.Atoi(c.Val())
+					if err2 == nil {
+						redis.writeTimeout = _writeTimeout
+					}
+				case "max_retries":
+					if !c.NextArg() {
+						return &Redis{}, c.ArgErr()
+					}
+					_maxRetries, err3 := strconv.Atoi(c.Val())
+					if err3 == nil {
+						redis.maxRetries = _maxRetries
+					}
+				case "pool_size":
+					if !c.NextArg() {
+						return &Redis{}, c.ArgErr()
+					}
+					_poolSize, err4 := strconv.Atoi(c.Val())
+					if err4 == nil {
+						redis.poolSize = _poolSize
 					}
 				case "ttl":
 					if !c.NextArg() {
 						return &Redis{}, c.ArgErr()
 					}
-					var val int
-					val, err = strconv.Atoi(c.Val())
-					if err != nil {
-						val = defaultTtl
+					_ttl, err5 := strconv.Atoi(c.Val())
+					if err5 == nil {
+						redis.ttl = uint32(_ttl)
 					}
-					redis.Ttl = uint32(val)
+				case "prefix":
+					if !c.NextArg() {
+						return &Redis{}, c.ArgErr()
+					}
+					if c.Val() != "" {
+						redis.keyPrefix = c.Val()
+					}
 				default:
 					if c.Val() != "}" {
-						return &Redis{}, c.Errf("unknown property '%s'", c.Val())
+						return &Redis{}, c.Errf("Unknown config property '%s'", c.Val())
 					}
 				}
-
 				if !c.Next() {
 					break
 				}
 			}
-
 		}
 		redis.Connect()
 		return &redis, nil

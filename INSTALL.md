@@ -52,7 +52,7 @@ For more configuration items, please refer to the coredns official website. For 
 }
 ```
 
-#### 5, start running
+#### 5, Start running
 
 If everything is normal, the coredns execution file will be generated in the coredns/ directory after compilation and start running:
 
@@ -60,7 +60,7 @@ If everything is normal, the coredns execution file will be generated in the cor
 ./coredns -conf Corefile
 ```
 
-#### 6, test run
+#### 6, Tests run
 
 Add test data:
 ```
