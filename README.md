@@ -26,6 +26,7 @@ For more configuration items, please refer to the coredns official website. For 
         pool_size 10
         ttl 360
         prefix _dns:
+        local_cache_expire_ms 5000
     }
     # Up recursive DNS query server list.
     # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
@@ -42,18 +43,19 @@ For more configuration items, please refer to the coredns official website. For 
 * `max_retries` Maximum number of retries, default: 10
 * `pool_size` redis connection pool size, default: 10
 * `ttl` zones resolve cache ttl, default: 360sec
-* `prefix` zone resolution record data is stored in redis-cluster key prefix, default: _dns:
+* `prefix` zones resolution record data is stored in redis-cluster key prefix, default: _dns:
+* `local_cache_expire_ms` zones resolving and record the validity period of the local cache, default: 5000ms (Note: In order to improve performance, the loading sequence of zones map data is in order: localCache -> redisCache -> db)
 
 
-### Direction analysis
-
-Currently does not support direction resolution
-
-### Agent
+### Reverse resolution
 
 Currently does not support direction resolution
 
-### Zones parsing records are stored in redis-cluster data format
+### Proxy resolution
+
+Currently does not support direction resolution
+
+### Zones resolving records are stored in redis-cluster data format
 
 Each zone is stored as a hash map in redis-cluster, with zone as the key. Note: According to the https://tools.ietf.org/html/rfc6763 protocol, it ends with a "." suffix. Such as:
 

@@ -16,41 +16,41 @@
 package redis
 
 import (
-	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"time"
+
+	clog "github.com/coredns/coredns/plugin/pkg/log"
 )
 
 var log = clog.NewWithPlugin("coredns-redisc")
 
 func Infof(format string, v ...interface{}) {
-	log.Infof(joinLogPrefix(format),v...)
+	log.Infof(joinLogPrefix(format), v...)
 }
 
 func Debugf(format string, v ...interface{}) {
-	log.Debugf(joinLogPrefix(format),v...)
+	log.Debugf(joinLogPrefix(format), v...)
 }
 
 func Errorf(format string, v ...interface{}) {
-	log.Errorf(joinLogPrefix(format),v...)
+	log.Errorf(joinLogPrefix(format), v...)
 }
 
 func Error(v ...interface{}) {
 	arr := make([]interface{}, 0, 10)
-	arr = append(arr,getLogPrefix())
-	v = append(arr,v)
+	arr = append(arr, getLogPrefix())
+	v = append(arr, v)
 	log.Error(v...)
 }
 
-func joinLogPrefix(str string) string{
+func joinLogPrefix(str string) string {
 	now := time.Now()
-	return Time2Str(now)+" "+str
+	return Time2Str(now) + " " + str
 }
 
-func getLogPrefix() string{
+func getLogPrefix() string {
 	now := time.Now()
-	return Time2Str(now)+" "
+	return Time2Str(now) + " "
 }
-
 
 func Time2Str(t time.Time) string {
 	const shortForm = "[2006-01-01 15:04:05]"
@@ -58,5 +58,3 @@ func Time2Str(t time.Time) string {
 	str := temp.Format(shortForm)
 	return str
 }
-
-
