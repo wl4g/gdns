@@ -43,7 +43,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 		poolSize:           10,
 		ttl:                360,
 		keyPrefix:          "_dns:",
-		localCacheExpireMs: 30000,
+		localCacheExpireMs: 5000,
 	}
 
 	for c.Next() {

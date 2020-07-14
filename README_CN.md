@@ -26,6 +26,7 @@ English version goes [here](./README.md)
         pool_size 10
         ttl 360
         prefix _dns:
+        local_cache_expire_ms 5000
     }
     # Up recursive DNS query server list.
     # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
@@ -43,17 +44,18 @@ English version goes [here](./README.md)
 * `pool_size` redis连接池大小，默认：10
 * `ttl` zones解析缓存ttl，默认：360sec
 * `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认：_dns:
+* `local_cache_expire_ms` zones解析记录本地高速缓存的有效期，默认：5000ms (说明: 为了提高性能, zones映射数据加载顺序依次为:  localCache -> redisCache -> db)
 
 
-### 方向解析
+### 反向解析
 
-目前暂不支持方向解析
+目前暂不支持反向解析
 
 ### 代理
 
-目前暂不支持方向解析
+目前暂不支持代理解析
 
-### zones解析记录存储在redis-cluster的数据格式
+### zones解析记录存储在redis-cluster中的数据格式
 
 每个zone作为散列映射存储在redis-cluster中，以zone作为key。注：按照https://tools.ietf.org/html/rfc6763规约，以“.”后缀结尾。如：
 
