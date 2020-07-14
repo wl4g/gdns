@@ -29,7 +29,7 @@ English version goes [here](./README.md)
     }
     # Up recursive DNS query server list.
     # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
-    forward. 8.8.8.8 114.114.114.114
+    forward . 8.8.8.8 114.114.114.114
     log
 }
 ```
