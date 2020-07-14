@@ -16,7 +16,7 @@ For more configuration items, please refer to the coredns official website. For 
         fallthrough
     }
     # Load zones records from redis-cluster.
-    coredns-redisc {
+    coredns_agent {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password "123456"
         connect_timeout 5000

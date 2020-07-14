@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	PluginName = "coredns-redisc"
+	PluginName = "coredns_agent"
 )
 
 func init() {

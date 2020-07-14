@@ -1,4 +1,4 @@
-### Secondary development coredns-redisc
+### Secondary development coredns_agent
 
 #### 1, download the project
 First, git clone https://github.com/coredns/coredns (you need to download the coredns main library project before running external plugins)
@@ -9,9 +9,9 @@ Modify the configuration file coredns/plugin.cfg, for example, add our plug-in o
 ```
 vim coredns/plugin.cfg
 ...
-#The development environment recommends using the local directory name coredns-redisc directly, without using the github.com/wl4g/coredns-redisc address.
-coredns-redisc:coredns-redisc
-#coredns-redisc:github.com/wl4g/coredns-redisc
+#The development environment recommends using the local directory name coredns_agent directly, without using the github.com/wl4g/coredns_agent address.
+coredns_agent:coredns_agent
+#coredns_agent:github.com/wl4g/coredns_agent
 forward:forward
 ...
 ```
@@ -47,9 +47,10 @@ Add test data:
 redis-cli> hset example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
 ```
 
-dns client query test:
+DNS client query test:
 ```
-dig me.example.net
+#dig @202.106.0.20 -p 53 -t a a google.com
+dig -p 53 -t a me.example.net
 
 
 ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-9.P2.el7 <<>> me.example.net

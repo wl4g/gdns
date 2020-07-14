@@ -21,7 +21,7 @@ import (
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 )
 
-var log = clog.NewWithPlugin("coredns-redisc")
+var log = clog.NewWithPlugin(PluginName)
 
 func Infof(format string, v ...interface{}) {
 	log.Infof(joinLogPrefix(format), v...)

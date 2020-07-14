@@ -1,4 +1,4 @@
-## 二次开发coredns-redisc
+## 二次开发coredns_agent
 
 #### 1，下载项目
 首先git clone https://github.com/coredns/coredns （运行外部插件需先下载coredns主库项目）
@@ -9,9 +9,9 @@
 ```
 vim coredns/plugin.cfg
 ...
-#开发环境建议直接使用本地目录名coredns-redisc即可，无需使用github.com/wl4g/coredns-redisc地址。
-coredns-redisc:coredns-redisc
-#coredns-redisc:github.com/wl4g/coredns-redisc
+#开发环境建议直接使用本地目录名coredns_agent即可，无需使用github.com/wl4g/coredns_agent地址。
+coredns_agent:coredns_agent
+#coredns_agent:github.com/wl4g/coredns_agent
 forward:forward
 ...
 ```
@@ -47,9 +47,10 @@ SYSTEM:=GOOS=darwin GOARCH=amd64
 redis-cli> hset example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
 ```
 
-dns客户端查询测试：
+DNS客户端查询测试：
 ```
-dig me.example.net
+#dig @202.106.0.20 -p 53 -t a a google.com
+dig -p 53 -t a me.example.net
 
 
 ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-9.P2.el7 <<>> me.example.net
@@ -65,9 +66,4 @@ dig me.example.net
 
 ;; ANSWER SECTION:
 me.example.net.               600     IN      A       10.0.0.166
-
-;; Query time: 2664 msec
-;; SERVER: 100.100.2.138#53(100.100.2.138)
-;; WHEN: Mon Jul 13 12:58:47 CST 2020
-;; MSG SIZE  rcvd: 53
-```
+dns
