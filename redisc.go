@@ -27,7 +27,6 @@ type Redis struct {
 	ttl            uint32
 	keyPrefix      string
 	localCacheExpireMs int64
-	LastZoneUpdate int64
 }
 
 func InterfaceToArray(i interface{}) []string {
@@ -409,24 +408,37 @@ func (redis *Redis) load(zone string) *Zone {
 		return nil
 	}
 
-	//redis.autoCleanCache()
-
-	hGetAll,err := conn.HGetAll(redis.keyPrefix + zone).Result();
-
-	if err != nil || len(hGetAll) == 0{
-		//load cache
+	//Step1: Get from local cache (in localCacheExpireMs)
+	bet := time.Now().UnixNano() / 1e6 - lastCacheTime[zone]
+	log.Debugf("time=%d  localCacheExpireMs=%d",bet,redis.localCacheExpireMs)
+	if bet < redis.localCacheExpireMs {
 		z := localCache[zone]
 		if z != nil {
+			log.Infof("get from local cache: %s",z.Name)
 			return z
 		}
 	}
 
+	//Step2: Get from redis
+	hGetAll,err := conn.HGetAll(redis.keyPrefix + zone).Result();
+
+	//Step3: if get nil from redis,try get from local cache
+	if err != nil || len(hGetAll) == 0{
+		z := localCache[zone]
+		if z != nil {
+			log.Infof("get redis nil, get from local cache: %s",z.Name)
+			return z
+		}else{
+			log.Info("get redis nil, get from local nil")
+			return nil
+		}
+	}
 
 	z := new(Zone)
 	z.Name = zone
 	z.Locations = make(map[string]*Record)
 	for key, val := range hGetAll{
-		log.Infof("HGetAll from Redis: %s val:%s", key, val)
+		log.Debugf("HGetAll from Redis: %s val:%s", key, val)
 		r := new(Record)
 		err := json.Unmarshal([]byte(val), r)
 		if err != nil {
@@ -437,17 +449,10 @@ func (redis *Redis) load(zone string) *Zone {
 	}
 	//save cache
 	localCache[zone] = z
+	lastCacheTime[zone] = time.Now().UnixNano() / 1e6
+	log.Infof("get from redis : %s",z.Name)
 
 	return z
-}
-
-func (redis *Redis) autoCleanCache() {
-	bet := time.Now().UnixNano() / 1e6-redis.LastZoneUpdate
-	log.Infof("time=%d  localCacheExpireMs=%d",bet,redis.localCacheExpireMs)
-	if bet>redis.localCacheExpireMs {
-		localCache = map[string]*Zone{}
-		redis.LastZoneUpdate = time.Now().UnixNano() / 1e6
-	}
 }
 
 func (redis *Redis) GetBlacklist() []string {
@@ -509,6 +514,7 @@ func split255(s string) []string {
 var SpecialDomains = [...]string{"com.cn.", "net.cn.", ".ac.cn.", ".org.cn.", ".gov.cn.", ".mil.cn.", ".edu.cn."}
 
 var localCache map[string]*Zone = map[string]*Zone{}
+var lastCacheTime map[string]int64 = map[string]int64{}
 
 const (
 	transferLength     = 1000
