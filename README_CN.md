@@ -10,6 +10,7 @@ English version goes [here](./README.md)
 
 ```hocon
 .:53 {
+    loadbalance round_robin
     # Load zones records from local /etc/hosts.
     hosts {
         fallthrough

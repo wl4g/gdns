@@ -82,4 +82,10 @@ func TestSim(t *testing.T) {
 	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu*"))
 }
 
+func TestLog(t *testing.T) {
+	Error("adsf")
+}
+
+
+
 

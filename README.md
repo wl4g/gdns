@@ -10,6 +10,7 @@ For more configuration items, please refer to the coredns official website. For 
 
 ```hocon
 .:53 {
+    loadbalance round_robin
     # Load zones records from local /etc/hosts.
     hosts {
         fallthrough
