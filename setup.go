@@ -1,4 +1,4 @@
-package redis
+package coredns_agent
 
 import (
 	"strconv"

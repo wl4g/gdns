@@ -1,7 +1,8 @@
-package redis
+package coredns_agent
 
 import (
 	"fmt"
+
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"

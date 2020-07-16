@@ -1,4 +1,4 @@
-package redis
+package coredns_agent
 
 import (
 	"encoding/json"
@@ -398,14 +398,13 @@ func (redis *Redis) save(zone string, subdomain string, value string) error {
 }
 
 func (redis *Redis) load(zone string) *Zone {
-
 	conn := redis.ClusterClient
 	if conn == nil {
-		Error("error connecting to redis")
+		Error("Error redis cluster connection")
 		return nil
 	}
 
-	//Step1: Get from local cache (in localCacheExpireMs)
+	// step1: Gets it from the local cache first
 	diffTime := time.Now().UnixNano()/1e6 - lastCacheTime[zone]
 	Debugf("time=%d  localCacheExpireMs=%d", diffTime, redis.localCacheExpireMs)
 	if diffTime < redis.localCacheExpireMs {
@@ -416,19 +415,24 @@ func (redis *Redis) load(zone string) *Zone {
 		}
 	}
 
-	//Step2: Get from redis
-	zoneData, err := conn.HGetAll(redis.keyPrefix + zone).Result()
+	// step2: If the local cache does not exist or has expired, it will be retrieved from redis
+	zoneKey := redis.keyPrefix + zone
+	zoneData, err := conn.HGetAll(zoneKey).Result()
 
-	//Step3: if get nil from redis,try get from local cache
-	if err != nil || len(zoneData) == 0 {
+	// step3: If redis gets none, the last local cache is used again
+	// (possibly obsolete, But at least it can guarantee fault tolerance and high availability)
+	if err != nil {
 		z := localCache[zone]
 		if z != nil {
-			Infof("get redis nil, get from local cache: %s", z.Name)
+			Warningf("Fallback, Using last local cache zones data. zoneKey: %s", zoneKey)
 			return z
 		} else {
-			Infof("get redis nil and get from local nil")
+			Errorf("Failed to load zones data. There is no data in local cache and redis. zoneKey: %s", zoneKey)
 			return nil
 		}
+	} else if len(zoneData) == 0 {
+		Infof("No zones data loaded from redis. zoneKey: %s", zoneKey)
+		return nil
 	}
 
 	z := new(Zone)

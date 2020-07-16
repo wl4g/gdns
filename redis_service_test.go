@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package redis
+package coredns_agent
 
 import (
 	"encoding/json"
 	"fmt"
-	redisCon "github.com/go-redis/redis/v7"
 	"testing"
 	"time"
+
+	redisCon "github.com/go-redis/redis/v7"
 )
 
 var clusterClient *redisCon.ClusterClient
@@ -50,7 +51,7 @@ func TestRedisCollector(t *testing.T) {
 	z := new(Zone)
 	z.Name = "shangmai.com"
 	z.Locations = make(map[string]*Record)
-	for key, val := range hGetAll{
+	for key, val := range hGetAll {
 		r := new(Record)
 		err := json.Unmarshal([]byte(val), r)
 		if err != nil {
@@ -73,19 +74,15 @@ func TestQname2Zone(t *testing.T) {
 }
 
 func TestSim(t *testing.T) {
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu.com"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","baidu.com"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.com"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","fanyi.*.com"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.baidu.*"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","*.ba*u.*"))
-	fmt.Println(ExpressionMatch("fanyi.baidu.com","*baidu*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "*baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "*.baidu.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "fanyi.*.com"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "*.baidu.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "*.ba*u.*"))
+	fmt.Println(ExpressionMatch("fanyi.baidu.com", "*baidu*"))
 }
 
 func TestLog(t *testing.T) {
 	Error("adsf")
 }
-
-
-
-
