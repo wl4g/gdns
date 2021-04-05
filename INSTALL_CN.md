@@ -1,4 +1,4 @@
-## 二次开发coredns_agent
+## 二次开发环境搭建
 
 #### 1，下载项目
 首先git clone https://github.com/coredns/coredns （运行外部插件需先下载coredns主库项目）
