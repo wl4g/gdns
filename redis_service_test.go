@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package coredns_agent
+package xcloud_dopaas_coredns
 
 import (
 	"encoding/json"
@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coredns/coredns/plugin/pkg/log"
 	redisCon "github.com/go-redis/redis/v7"
 )
 

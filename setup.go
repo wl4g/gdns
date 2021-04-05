@@ -1,4 +1,4 @@
-package coredns_agent
+package xcloud_dopaas_coredns
 
 import (
 	"strconv"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	PluginName = "coredns_agent"
+	PluginName = "xcloud_dopaas_coredns"
 )
 
 func init() {

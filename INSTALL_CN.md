@@ -10,11 +10,17 @@
 vim coredns/plugin.cfg
 ...
 #开发环境建议直接使用本地目录名coredns_agent即可，无需使用github.com/wl4g/coredns_agent地址。
-coredns_agent:coredns_agent
-#coredns_agent:github.com/wl4g/coredns_agent
+xcloud_dopaas_coredns:xcloud_dopaas_coredns
+#xcloud_dopaas_coredns:github.com/wl4g/xcloud-dopaas-coredns
 forward:forward
 ...
 ```
+
+#### 2.1，使插件生效(重新生成指令)
+```go
+go run directives_generate.go
+```
+> 重新生成成功后，可检查源码文件：coredns/core/plugin/zplugin.go 和 coredns/core/dnsserver/zdirectives.go
 
 #### 3，编译（合并插件）
 在执行make之前，可以修改Makefile来修改配置实现交叉编译，如：
@@ -44,13 +50,13 @@ SYSTEM:=GOOS=darwin GOARCH=amd64
 
 添加测试数据：
 ```
-redis-cli> hset example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
+redis-cli> hset _coredns:example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
 ```
 
 DNS客户端查询测试：
 ```
-#dig @202.106.0.20 -p 53 -t a a google.com
-dig -p 53 -t a me.example.net
+#dig @202.106.0.20 -p 53 -t a google.com
+dig @127.0.0.1 -p 1053 -t a me.example.net
 
 
 ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-9.P2.el7 <<>> me.example.net

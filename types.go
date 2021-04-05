@@ -1,4 +1,4 @@
-package coredns_agent
+package xcloud_dopaas_coredns
 
 import "net"
 

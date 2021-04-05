@@ -1,4 +1,4 @@
-### Secondary development coredns_agent
+### Secondary development xcloud_dopaas_coredns
 
 #### 1, download the project
 First, git clone https://github.com/coredns/coredns (you need to download the coredns main library project before running external plugins)
@@ -9,12 +9,18 @@ Modify the configuration file coredns/plugin.cfg, for example, add our plug-in o
 ```
 vim coredns/plugin.cfg
 ...
-#The development environment recommends using the local directory name coredns_agent directly, without using the github.com/wl4g/coredns_agent address.
-coredns_agent:coredns_agent
-#coredns_agent:github.com/wl4g/coredns_agent
+# The development environment recommends using the local directory name xcloud_dopaas_coredns directly, without using the github.com/wl4g/xcloud_dopaas_coredns address.
+xcloud_dopaas_coredns:xcloud_dopaas_coredns
+#xcloud_dopaas_coredns:github.com/wl4g/xcloud_dopaas_coredns
 forward:forward
 ...
 ```
+
+#### 2.1, Make plugin effective (regenerate directives)
+```go
+go run directives_generate.go
+```
+> After the regeneration is successful, you can check the source code file: `coredns/core/plugin/zplugin.go` and `coredns/core/dnsserver/zdirectives.go`
 
 #### 3, compile (merge plugin)
 Before executing make, you can modify the Makefile to modify the configuration to achieve cross compilation, such as:
@@ -44,13 +50,13 @@ If everything is normal, the coredns execution file will be generated in the cor
 
 Add test data:
 ```
-redis-cli> hset example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
+redis-cli> hset _coredns:example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
 ```
 
 DNS client query test:
 ```
-#dig @202.106.0.20 -p 53 -t a a google.com
-dig -p 53 -t a me.example.net
+#dig @202.106.0.20 -p 53 -t a google.com
+dig @127.0.0.1 -p 1053 -t a me.example.net
 
 
 ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-9.P2.el7 <<>> me.example.net

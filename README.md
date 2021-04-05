@@ -17,7 +17,7 @@ For more configuration items, please refer to the coredns official website. For 
         fallthrough
     }
     # Load zones records from redis-cluster.
-    coredns_agent {
+    xcloud_dopaas_coredns {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password "123456"
         connect_timeout 5000
@@ -26,7 +26,7 @@ For more configuration items, please refer to the coredns official website. For 
         max_retries 10
         pool_size 10
         ttl 360
-        prefix _dns:
+        prefix _coredns:
         local_cache_expire_ms 5000
     }
     # Up recursive DNS query server list.
