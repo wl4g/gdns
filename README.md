@@ -1,4 +1,5 @@
-## A coredns enterprise-level plug-in that can obtain zone resolution records from redis-cluster, which can be integrated with super-cloudops [https://github.com/wl4g/super-cloudops](https://github.com/wl4g/ super-cloudops), provides DevOps unified management web GUI
+## CoreDNS enterprise plugin for DoPaaS
+> That can obtain zone resolution records from redis-cluster, it can be integrated with DoPaaS [https://github.com/wl4g/xcloud-dopaas](https://github.com/wl4g/xcloud-dopaas), provides DoPaaS unified management web GUI.
 
 English version goes [here](./README.md)
 
