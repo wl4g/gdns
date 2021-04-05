@@ -1,4 +1,6 @@
-## 一个coredns企业级插件，实现从redis-cluster获取zones解析记录，可与super-cloudops整合[https://github.com/wl4g/super-cloudops](https://github.com/wl4g/super-cloudops)，提供DevOps统一管理web GUI
+## 集成于DoPaaS的CoreDNS企业级插件
+
+> 支持从redis-cluster获取zones解析记录，可与DoPaaS整合[https://github.com/wl4g/xcloud-dopaas](https://github.com/wl4g/xcloud-dopaas)，提供DoPaaS统一管理web GUI
 
 English version goes [here](./README.md)
 
