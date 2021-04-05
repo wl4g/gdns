@@ -3,7 +3,7 @@
 
 English version goes [here](./README.md)
 
-[Secondary Development] (./INSTALL_CN.md)
+[Developer Guide](./INSTALL_CN.md)
 
 ### Configuration example
 
