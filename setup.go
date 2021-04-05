@@ -21,18 +21,18 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	r, err := redisParse(c)
+	redis, err := initRedisClusterClient(c)
 	if err != nil {
 		return plugin.Error("redis", err)
 	}
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		r.Next = next
-		return r
+		redis.Next = next
+		return redis
 	})
 	return nil
 }
 
-func redisParse(c *caddy.Controller) (*Redis, error) {
+func initRedisClusterClient(c *caddy.Controller) (*Redis, error) {
 	redis := Redis{
 		address:            "localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381",
 		password:           "",
@@ -42,7 +42,7 @@ func redisParse(c *caddy.Controller) (*Redis, error) {
 		maxRetries:         10,
 		poolSize:           10,
 		ttl:                360,
-		keyPrefix:          "_dns:",
+		keyPrefix:          "_coredns:",
 		localCacheExpireMs: 5000,
 	}
 

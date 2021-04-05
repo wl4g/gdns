@@ -17,10 +17,10 @@ English version goes [here](./README.md)
     hosts {
         fallthrough
     }
-    # Load zones records from redis-cluster.
+    # Load zones records from redis-cluster(default settings).
     xcloud_dopaas_coredns {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-        password "123456"
+        password ""
         connect_timeout 5000
         read_timeout 10000
         write_timeout 5000
