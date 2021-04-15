@@ -32,7 +32,8 @@ English version goes [here](./README.md)
     }
     # Up recursive DNS query server list.
     # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
-    forward . 8.8.8.8 114.114.114.114
+    #forward . 8.8.8.8 114.114.114.114
+    forward . 202.96.134.133 202.96.212.68 # In china
     reload 6s
     log . "{local}:{port} - {>id} '{type} {class} {name} {proto} {size} {>do} {>bufsize}' {rcode} {>rflags} {rsize} {duration}"
     errors
@@ -222,3 +223,5 @@ redis-cli> hgetall example.net.
 16)"{\"caa\":[{\"flag\":0, \"tag\":\"issue\", \"value\":\"letsencrypt.org\"}]}"
 redis-cli>
 ```
+
+### [其他工具](tools/README.md)
