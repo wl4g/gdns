@@ -47,7 +47,7 @@ English version goes [here](./README.md)
 * `max_retries` 最大重试次数，默认：10
 * `pool_size` redis连接池大小，默认：10
 * `ttl` zones解析缓存ttl，默认：360sec
-* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认：_dns:
+* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认值：`_coredns:`
 * `local_cache_expire_ms` zones解析记录本地高速缓存的有效期，默认：5000ms (说明: 为了提高性能, zones映射数据加载顺序依次为:  localCache -> redisCache -> db)
 
 

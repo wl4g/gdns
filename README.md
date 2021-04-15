@@ -46,7 +46,7 @@ For more configuration items, please refer to the coredns official website. For 
 * `max_retries` Maximum number of retries, default: 10
 * `pool_size` redis connection pool size, default: 10
 * `ttl` zones resolve cache ttl, default: 360sec
-* `prefix` zones resolution record data is stored in redis-cluster key prefix, default: _dns:
+* `prefix` zones resolution record data is stored in redis-cluster key prefix, default: `_coredns:`
 * `local_cache_expire_ms` zones resolving and record the validity period of the local cache, default: 5000ms (Note: In order to improve performance, the loading sequence of zones map data is in order: localCache -> redisCache -> db)
 
 
