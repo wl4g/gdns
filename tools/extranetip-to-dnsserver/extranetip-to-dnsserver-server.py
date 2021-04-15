@@ -45,7 +45,7 @@ def predict():
         {"host": "127.0.0.1", "port": 7381}],
         password='zzx!@#$%')
     print("Saving DNS resolve ipaddr for : " + ipaddr)
-    redisClient.hset("anjiancloud.owner.", "*", ipaddr)
+    redisClient.hset("_coredns:anjiancloud.owner.", "*", ipaddr)
     redisClient.connection_pool.disconnect()
     print("Closed redis cluster connection pool for - " + str(redisClient))
 
