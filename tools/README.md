@@ -10,13 +10,16 @@ ls extranetip-to-dnsserver
 
 # ---------- Client(Company hosts side) -------
 pip3 install flask
-startClientCommand='nohup /usr/bin/client.py > /dev/null 2>&1 &'
+clientLog='/mnt/disk1/log/extranetip-to-dnsserver/'
+mkdir -p $clientLog
+startClientCommand="nohup /usr/bin/extranetip-to-dnsserver-client.py > $clientLog/client.out 2>&1 &"
 echo $startClientCommand >> /etc/rc.local # CentOS7
-`$startClientCommand`
 
 # --------- Server(CoreDNS side) --------
 pip3 install flask
-startServerCommand='nohup /usr/bin/server.py > /dev/null 2>&1 &'
+pip3 install redis-py-cluster
+serverLog='/mnt/disk1/log/extranetip-to-dnsserver/'
+mkdir -p $serverLog
+startServerCommand="nohup /usr/bin/extranetip-to-dnsserver-server.py > $serverLog/server.out 2>&1 &"
 echo $startServerCommand >> /etc/rc.local # CentOS7
-`$startServerCommand`
 ```
