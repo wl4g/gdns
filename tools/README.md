@@ -10,12 +10,12 @@ ls extranetip-to-dnsserver
 
 # ---------- Client(Company hosts side) -------
 pip3 install flask
-startClientCommand='nohup python /usr/bin/client.py > /dev/null 2>&1 &'
+startClientCommand='nohup python /usr/bin/client.py >> /dev/null 2>&1 &'
 echo $startClientCommand > /etc/rc.local # CentOS7
 `$startClientCommand`
 
 # --------- Server(CoreDNS side) --------
-startServerCommand='nohup python /usr/bin/server.py > /dev/null 2>&1 &'
+startServerCommand='nohup python /usr/bin/server.py >> /dev/null 2>&1 &'
 echo $startServerCommand > /etc/rc.local # CentOS7
 `$startServerCommand`
 ```
