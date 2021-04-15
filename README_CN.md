@@ -32,7 +32,15 @@ English version goes [here](./README.md)
     }
     # Up recursive DNS query server list.
     # e.g. Google dns servers: 8.8.8.8, china telecom dns servers: 114.114.114.114,202.96.134.133,202.96.212.68
-    #forward . 8.8.8.8 114.114.114.114
+    #forward . 8.8.8.8 114.114.114.114 {
+    #  tls_servername dns.google
+    #  force_tcp
+    #  max_fails 3
+    #  expire 10s
+    #  health_check 5s
+    #  policy sequential
+    #  except www.baidu.com
+    #}
     forward . 202.96.134.133 202.96.212.68 # In china
     reload 6s
     log . "{local}:{port} - {>id} '{type} {class} {name} {proto} {size} {>do} {>bufsize}' {rcode} {>rflags} {rsize} {duration}"
