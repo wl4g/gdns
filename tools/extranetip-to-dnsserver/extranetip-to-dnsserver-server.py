@@ -5,9 +5,9 @@ import os
 import hashlib
 from flask import Flask, jsonify, request
 from flask import json
+from rediscluster import RedisCluster
 
 # This script is run into the docker container running bind.
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -33,8 +33,21 @@ def predict():
         print('Calculation signture: %s, request singture: %s' % (sign, _sign))
         return jsonify({"code":"Illegal signture"})
 
-    print("DNS update for : "+ipaddr)
-    os.system("%s %s"%("/root/dns-update-tool.sh", ipaddr))
+    print("DNS update for : "+ ipaddr)
+    #os.system("%s %s"%("/root/dns-update-tool.sh", ipaddr))
+
+    redisClient = RedisCluster(startup_nodes=[
+        {"host": "127.0.0.1", "port": 6369},
+        {"host": "127.0.0.1", "port": 6380},
+        {"host": "127.0.0.1", "port": 6381},
+        {"host": "127.0.0.1", "port": 7379},
+        {"host": "127.0.0.1", "port": 7380},
+        {"host": "127.0.0.1", "port": 7381}],
+        password='zzx!@#$%')
+    print("Saving DNS resolve ipaddr for : " + ipaddr)
+    redisClient.hset("anjiancloud.owner.", "*", ipaddr)
+    redisClient.connection_pool.disconnect()
+    print("Closed redis cluster connection pool for - " + str(redisClient))
 
     return jsonify({"code":"ok","ipaddr":ipaddr})
 
