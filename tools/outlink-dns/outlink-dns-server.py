@@ -15,7 +15,7 @@ def index():
     return "Wecome to index!"
 
 @app.route('/dns/update', methods=['POST'])
-def predict():
+def updateDns():
     # Get parameters
     sign = request.args.get('sign')
     r = request.args.get('r')
@@ -45,7 +45,9 @@ def predict():
         {"host": "127.0.0.1", "port": 7381}],
         password='zzx!@#$%')
     print("Saving DNS resolve ipaddr for : " + ipaddr)
-    redisClient.hset("_coredns:anjiancloud.owner.", "*", ipaddr)
+    zoneJson = "{\"a\":[{\"ttl\":600, \"ip\":\"%s\"}]}" % (ipaddr)
+    redisClient.hset("_coredns:anjiancloud.owner.", "*", zoneJson)
+    redisClient.hset("_coredns:anjiancloud.owner.", "@", zoneJson)
     redisClient.connection_pool.disconnect()
     print("Closed redis cluster connection pool for - " + str(redisClient))
 

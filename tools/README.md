@@ -6,20 +6,20 @@
 
 Usage:
 ```
-ls extranetip-to-dnsserver
+cd $PROJECT_HOME/outlink-dns
 
-# ---------- Client(Company hosts side) -------
+# ---------- Client(e.g Company intranet hosts client side) -------
 pip3 install flask
-clientLog='/mnt/disk1/log/extranetip-to-dnsserver/'
+clientLog='/mnt/disk1/log/outlink-dns/'
 mkdir -p $clientLog
-startClientCommand="nohup /usr/bin/extranetip-to-dnsserver-client.py > $clientLog/client.out 2>&1 &"
+startClientCommand="nohup /usr/bin/outlink-dns-client.py > $clientLog/client.out 2>&1 &"
 echo $startClientCommand >> /etc/rc.local # CentOS7
 
-# --------- Server(CoreDNS side) --------
+# --------- Server(e.g CoreDNS extranet server side) --------
 pip3 install flask
 pip3 install redis-py-cluster
-serverLog='/mnt/disk1/log/extranetip-to-dnsserver/'
+serverLog='/mnt/disk1/log/outlink-dns/'
 mkdir -p $serverLog
-startServerCommand="nohup /usr/bin/extranetip-to-dnsserver-server.py > $serverLog/server.out 2>&1 &"
+startServerCommand="nohup /usr/bin/outlink-dns-server.py > $serverLog/server.out 2>&1 &"
 echo $startServerCommand >> /etc/rc.local # CentOS7
 ```
