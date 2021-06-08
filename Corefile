@@ -17,7 +17,7 @@
     local_cache_expire_ms 5000
   }
 
-  forward . tls://8.8.8.8 tls://8.8.4.4 {
+  forward . 114.114.114.114 tls://8.8.8.8 tls://8.8.4.4 {
     tls_servername dns.google
     force_tcp
     max_fails 3
