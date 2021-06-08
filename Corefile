@@ -1,0 +1,34 @@
+.:1053 {
+  # Load local /etc/hosts
+  hosts {
+    fallthrough
+  }
+
+  xcloud_dopaas_coredns {
+    address "127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381,127.0.0.1:7379,127.0.0.1:7380,127.0.0.1:7381"
+    password "zzx!@#$%"
+    connect_timeout 5000
+    read_timeout 10000
+    write_timeout 5000
+    max_retries 10
+    pool_size 10
+    ttl 360
+    prefix _coredns:
+    local_cache_expire_ms 5000
+  }
+
+  forward . tls://8.8.8.8 tls://8.8.4.4 {
+    tls_servername dns.google
+    force_tcp
+    max_fails 3
+    expire 10s
+    health_check 5s
+    policy sequential
+    except www.baidu.com
+  }
+
+  cache 120
+  reload 6s
+  log . "{local}:{port} - {>id} '{type} {class} {name} {proto} {size} {>do} {>bufsize}' {rcode} {>rflags} {rsize} {duration}"
+  errors
+}
