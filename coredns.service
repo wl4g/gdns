@@ -1,0 +1,17 @@
+[Unit]
+Description=CoreDNS Server Service
+After=network.target
+
+[Service]
+Type=fork
+User=root
+Group=root
+Restart=always
+RestartSec=5s
+ExecStart=bash -c "/opt/apps/coredns-1.7.0/coredns_linux_amd64_v1.7.0 -conf /opt/apps/coredns-1.7.0/Corefile"
+ExecReload=/bin/kill -s HUP $MAINPID
+StandardOutput=/mnt/disk1/log/coredns/coredns.out
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
