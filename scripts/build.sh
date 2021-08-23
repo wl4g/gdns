@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2017 ~ 2025 the original author or authors<Wanglsir@gmail.com, 983708408@qq.com>.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
