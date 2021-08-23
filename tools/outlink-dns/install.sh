@@ -37,7 +37,9 @@ function installClient() {
     esac
     local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/client.out 2>&1 &"
     sudo echo $startCmd >> /etc/rc.local # CentOS7
-    echo "Installed outlink client to $installFile"
+    echo "Starting for outlink client ..."
+    bash -c "$startCmd"
+    echo "Installed outlink client to $installFile successfully !"
 }
 
 # Installation to server(e.g CoreDNS extranet server side)
@@ -61,7 +63,9 @@ function installServer() {
     esac
     local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/server.out 2>&1 &"
     sudo echo $startCmd >> /etc/rc.local # CentOS7
-    echo "Installed outlink server to $installFile"
+    echo "Starting for outlink server ..."
+    bash -c "$startCmd"
+    echo "Installed outlink server to $installFile successfully !"
 }
 
 # --- Main entries. ---
