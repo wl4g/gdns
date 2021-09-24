@@ -35,7 +35,7 @@ function installClient() {
             sudo cp -r "ddns-client.py" $installFile
         ;;
     esac
-    local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/client.out 2>&1 &"
+    local startCmd=". /etc/profile; nohup $installFile > $OUTLINK_LOG_DIR/client.out 2>&1 &"
     sudo echo $startCmd >> /etc/rc.local # CentOS7
     echo "Starting for outlink client ..."
     bash -c "$startCmd"
@@ -61,7 +61,7 @@ function installServer() {
             sudo cp -r "ddns-server.py" $installFile
         ;;
     esac
-    local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/server.out 2>&1 &"
+    local startCmd=". /etc/profile; nohup $installFile > $OUTLINK_LOG_DIR/server.out 2>&1 &"
     sudo echo $startCmd >> /etc/rc.local # CentOS7
     echo "Starting for outlink server ..."
     bash -c "$startCmd"
