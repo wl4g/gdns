@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return "Wecome to index!"
+    return "Wecome to DoPaas-CoreDNS for DDNS!"
 
 @app.route('/dns/update', methods=['POST'])
 def updateDns():

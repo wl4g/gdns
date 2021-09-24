@@ -15,24 +15,24 @@
 
 # Global definition.
 CURR_DIR=$(cd "`dirname $0`"/;pwd)
-OUTLINK_LOG_DIR='/mnt/disk1/log/outlink-dns'; mkdir -p $OUTLINK_LOG_DIR
+OUTLINK_LOG_DIR='/mnt/disk1/log/ddns'; mkdir -p $OUTLINK_LOG_DIR
 
 # Installation to client. (e.g: Company intranet hosts client side)
 function installClient() {
     cd $CURR_DIR
     local useBinary=$1
-    local installFile='/bin/outlink-dns-client'
+    local installFile='/bin/ddns-client'
     # Compiling install.
     pip3 install flask
     case $useBinary in
         -b|--binary)
             pip3 install pyinstaller
-            pyinstaller -F outlink-dns-client.py
-            sudo cp -r "dist/outlink-dns-client" $installFile
+            pyinstaller -F ddns-client.py
+            sudo cp -r "dist/ddns-client" $installFile
             sudo rm -rf __pycache__ build dist *.spec # Clean
         ;;
         *)
-            sudo cp -r "outlink-dns-client.py" $installFile
+            sudo cp -r "ddns-client.py" $installFile
         ;;
     esac
     local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/client.out 2>&1 &"
@@ -46,19 +46,19 @@ function installClient() {
 function installServer() {
     cd $CURR_DIR
     local useBinary=$1
-    local installFile='/bin/outlink-dns-server'
+    local installFile='/bin/ddns-server'
     # Compiling install.
     pip3 install flask
     pip3 install redis-py-cluster
     case $useBinary in
         -b|--binary)
             pip3 install pyinstaller
-            pyinstaller -F outlink-dns-server.py
-            sudo cp -r "dist/outlink-dns-server" $installFile
+            pyinstaller -F ddns-server.py
+            sudo cp -r "dist/ddns-server" $installFile
             sudo rm -rf __pycache__ build dist *.spec # Clean
         ;;
         *)
-            sudo cp -r "outlink-dns-server.py" $installFile
+            sudo cp -r "ddns-server.py" $installFile
         ;;
     esac
     local startCmd="nohup $installFile > $OUTLINK_LOG_DIR/server.out 2>&1 &"
