@@ -16,7 +16,7 @@ import http.client,urllib.parse
 def updateDNS(): 
   try:
     # Hasing sign
-    key = 'au43hwe9dfkl'
+    key = os.getenv('COREDNS_DDNS_KEY', 'abcdefghijklmnopqrstuvwxyz')
     r = random.random()
     orgin = "%s%s" % (r,key)
     hl = hashlib.md5()
@@ -24,19 +24,21 @@ def updateDNS():
     sign = hl.hexdigest()
 
     # Build parameters
-    url = '/dns/update?sign=%s&r=%s' % (sign,r)
+    url = '/ddns/update?sign=%s&r=%s' % (sign,r)
     jsonData = json.dumps("{}")
 
-    conn = http.client.HTTPConnection("127.0.0.2", 4008)
+    serverAddr = os.getenv('COREDNS_DDNS_SERVER_ADDR', '127.0.0.1')
+    serverPort = os.getenv('COREDNS_DDNS_SERVER_PORT', 4008)
+    conn = http.client.HTTPConnection(serverAddr, serverPort)
     conn.request('POST', url, jsonData, {'Content-Type':'application/json'})
     res = conn.getresponse()
     resData = res.read().decode('utf-8')
     conn.close()
 
-    print(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+" - DNS update request : "+url+", response status: "+ str(res.status) +", data: "+resData)
+    print(dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+" - DDNS update request : "+url+", response status: "+ str(res.status) +", data: "+resData)
   finally:
     global timer
-    delay = random.random()*1000+2000
+    delay = random.randrange(os.getenv('COREDNS_DDNS_DELAY_SEC_MIN', 1800), os.getenv('COREDNS_DDNS_DELAY_SEC_MAX', 7200))
     timer = threading.Timer(delay, updateDNS)
     timer.start()
 
