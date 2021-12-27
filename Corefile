@@ -15,6 +15,7 @@
     ttl 360
     prefix _coredns:
     local_cache_expire_ms 5000
+    #fallthrough # If not set, the upstream query will not be requested recursively when no record is found.
   }
 
   forward . 114.114.114.114 tls://8.8.8.8 tls://8.8.4.4 {
