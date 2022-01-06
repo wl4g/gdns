@@ -28,9 +28,14 @@
     except www.baidu.com
   }
 
-  cache 120
+  cache {
+    success 3600
+    denial 600
+  }
+  whoami
   reload 6s
   loadbalance
   log . "{local}:{port} - {>id} '{type} {class} {name} {proto} {size} {>do} {>bufsize}' {rcode} {>rflags} {rsize} {duration}"
   errors
+  prometheus 127.0.0.1:9253
 }
