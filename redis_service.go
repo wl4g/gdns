@@ -1,4 +1,4 @@
-package xcloud_dopaas_coredns
+package coredns_gdns
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	redisCon "github.com/go-redis/redis/v7"
 )
 
-type Redis struct {
+type RedisService struct {
 	Next               plugin.Handler
 	ClusterClient      *redisCon.ClusterClient
 	address            string
@@ -38,125 +38,125 @@ func InterfaceToArray(i interface{}) []string {
 	return result
 }
 
-func (redis *Redis) A(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) A(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, a := range record.A {
 		if a.Ip == nil {
 			continue
 		}
 		r := new(dns.A)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeA,
-			Class: dns.ClassINET, Ttl: redis.minTtl(a.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(a.Ttl)}
 		r.A = a.Ip
 		answers = append(answers, r)
 	}
 	return
 }
 
-func (redis Redis) AAAA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) AAAA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, aaaa := range record.AAAA {
 		if aaaa.Ip == nil {
 			continue
 		}
 		r := new(dns.AAAA)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeAAAA,
-			Class: dns.ClassINET, Ttl: redis.minTtl(aaaa.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(aaaa.Ttl)}
 		r.AAAA = aaaa.Ip
 		answers = append(answers, r)
 	}
 	return
 }
 
-func (redis *Redis) CNAME(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) CNAME(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, cname := range record.CNAME {
 		if len(cname.Host) == 0 {
 			continue
 		}
 		r := new(dns.CNAME)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeCNAME,
-			Class: dns.ClassINET, Ttl: redis.minTtl(cname.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(cname.Ttl)}
 		r.Target = dns.Fqdn(cname.Host)
 		answers = append(answers, r)
 	}
 	return
 }
 
-func (redis *Redis) TXT(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) TXT(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, txt := range record.TXT {
 		if len(txt.Text) == 0 {
 			continue
 		}
 		r := new(dns.TXT)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeTXT,
-			Class: dns.ClassINET, Ttl: redis.minTtl(txt.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(txt.Ttl)}
 		r.Txt = split255(txt.Text)
 		answers = append(answers, r)
 	}
 	return
 }
 
-func (redis *Redis) NS(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) NS(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, ns := range record.NS {
 		if len(ns.Host) == 0 {
 			continue
 		}
 		r := new(dns.NS)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeNS,
-			Class: dns.ClassINET, Ttl: redis.minTtl(ns.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(ns.Ttl)}
 		r.Ns = ns.Host
 		answers = append(answers, r)
-		extras = append(extras, redis.hosts(ns.Host, z)...)
+		extras = append(extras, redisService.hosts(ns.Host, z)...)
 	}
 	return
 }
 
-func (redis *Redis) MX(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) MX(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, mx := range record.MX {
 		if len(mx.Host) == 0 {
 			continue
 		}
 		r := new(dns.MX)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeMX,
-			Class: dns.ClassINET, Ttl: redis.minTtl(mx.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(mx.Ttl)}
 		r.Mx = mx.Host
 		r.Preference = mx.Preference
 		answers = append(answers, r)
-		extras = append(extras, redis.hosts(mx.Host, z)...)
+		extras = append(extras, redisService.hosts(mx.Host, z)...)
 	}
 	return
 }
 
-func (redis *Redis) SRV(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) SRV(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	for _, srv := range record.SRV {
 		if len(srv.Target) == 0 {
 			continue
 		}
 		r := new(dns.SRV)
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeSRV,
-			Class: dns.ClassINET, Ttl: redis.minTtl(srv.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(srv.Ttl)}
 		r.Target = srv.Target
 		r.Weight = srv.Weight
 		r.Port = srv.Port
 		r.Priority = srv.Priority
 		answers = append(answers, r)
-		extras = append(extras, redis.hosts(srv.Target, z)...)
+		extras = append(extras, redisService.hosts(srv.Target, z)...)
 	}
 	return
 }
 
-func (redis *Redis) SOA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) SOA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	r := new(dns.SOA)
 	if record.SOA.Ns == "" {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(name), Rrtype: dns.TypeSOA,
-			Class: dns.ClassINET, Ttl: redis.ttl}
+			Class: dns.ClassINET, Ttl: redisService.ttl}
 		r.Ns = "ns1." + name
 		r.Mbox = "hostmaster." + name
 		r.Refresh = 86400
 		r.Retry = 7200
 		r.Expire = 3600
-		r.Minttl = redis.ttl
+		r.Minttl = redisService.ttl
 	} else {
 		r.Hdr = dns.RR_Header{Name: dns.Fqdn(z.Name), Rrtype: dns.TypeSOA,
-			Class: dns.ClassINET, Ttl: redis.minTtl(record.SOA.Ttl)}
+			Class: dns.ClassINET, Ttl: redisService.minTtl(record.SOA.Ttl)}
 		r.Ns = record.SOA.Ns
 		r.Mbox = record.SOA.MBox
 		r.Refresh = record.SOA.Refresh
@@ -164,12 +164,12 @@ func (redis *Redis) SOA(name string, z *Zone, record *Record) (answers, extras [
 		r.Expire = record.SOA.Expire
 		r.Minttl = record.SOA.MinTtl
 	}
-	r.Serial = redis.serial()
+	r.Serial = redisService.serial()
 	answers = append(answers, r)
 	return
 }
 
-func (redis *Redis) CAA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
+func (redisService *RedisService) CAA(name string, z *Zone, record *Record) (answers, extras []dns.RR) {
 	if record == nil {
 		return
 	}
@@ -187,8 +187,8 @@ func (redis *Redis) CAA(name string, z *Zone, record *Record) (answers, extras [
 	return
 }
 
-func (redis *Redis) AXFR(z *Zone) (records []dns.RR) {
-	//soa, _ := redis.SOA(z.Name, z, record)
+func (redisService *RedisService) AXFR(z *Zone) (records []dns.RR) {
+	//soa, _ := redisService.SOA(z.Name, z, record)
 	soa := make([]dns.RR, 0)
 	answers := make([]dns.RR, 0, 10)
 	extras := make([]dns.RR, 0, 10)
@@ -197,39 +197,39 @@ func (redis *Redis) AXFR(z *Zone) (records []dns.RR) {
 	records = append(records, soa...)
 	for key := range z.Locations {
 		if key == "@" {
-			location := redis.findLocation(z.Name, z)
-			record := redis.get(location, z)
-			soa, _ = redis.SOA(z.Name, z, record)
+			location := redisService.findLocation(z.Name, z)
+			record := redisService.get(location, z)
+			soa, _ = redisService.SOA(z.Name, z, record)
 		} else {
 			fqdnKey := dns.Fqdn(key) + z.Name
 			var as []dns.RR
 			var xs []dns.RR
 
-			location := redis.findLocation(fqdnKey, z)
-			record := redis.get(location, z)
+			location := redisService.findLocation(fqdnKey, z)
+			record := redisService.get(location, z)
 
 			// Pull all zone records
-			as, xs = redis.A(fqdnKey, z, record)
+			as, xs = redisService.A(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 
-			as, xs = redis.AAAA(fqdnKey, z, record)
+			as, xs = redisService.AAAA(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 
-			as, xs = redis.CNAME(fqdnKey, z, record)
+			as, xs = redisService.CNAME(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 
-			as, xs = redis.MX(fqdnKey, z, record)
+			as, xs = redisService.MX(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 
-			as, xs = redis.SRV(fqdnKey, z, record)
+			as, xs = redisService.SRV(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 
-			as, xs = redis.TXT(fqdnKey, z, record)
+			as, xs = redisService.TXT(fqdnKey, z, record)
 			answers = append(answers, as...)
 			extras = append(extras, xs...)
 		}
@@ -244,40 +244,40 @@ func (redis *Redis) AXFR(z *Zone) (records []dns.RR) {
 	return
 }
 
-func (redis *Redis) hosts(name string, z *Zone) []dns.RR {
+func (redisService *RedisService) hosts(name string, z *Zone) []dns.RR {
 	var (
 		record  *Record
 		answers []dns.RR
 	)
-	location := redis.findLocation(name, z)
+	location := redisService.findLocation(name, z)
 	if location == "" {
 		return nil
 	}
-	record = redis.get(location, z)
-	a, _ := redis.A(name, z, record)
+	record = redisService.get(location, z)
+	a, _ := redisService.A(name, z, record)
 	answers = append(answers, a...)
-	aaaa, _ := redis.AAAA(name, z, record)
+	aaaa, _ := redisService.AAAA(name, z, record)
 	answers = append(answers, aaaa...)
-	cname, _ := redis.CNAME(name, z, record)
+	cname, _ := redisService.CNAME(name, z, record)
 	answers = append(answers, cname...)
 	return answers
 }
 
-func (redis *Redis) serial() uint32 {
+func (redisService *RedisService) serial() uint32 {
 	return uint32(time.Now().Unix())
 }
 
-func (redis *Redis) minTtl(ttl uint32) uint32 {
+func (redisService *RedisService) minTtl(ttl uint32) uint32 {
 	if ttl == 0 {
-		return redis.ttl
+		return redisService.ttl
 	}
-	if redis.ttl < ttl {
-		return redis.ttl
+	if redisService.ttl < ttl {
+		return redisService.ttl
 	}
 	return ttl
 }
 
-func (redis *Redis) findLocation(query string, z *Zone) string {
+func (redisService *RedisService) findLocation(query string, z *Zone) string {
 	var (
 		ok                                 bool
 		closestEncloser, sourceOfSynthesis string
@@ -311,7 +311,7 @@ func (redis *Redis) findLocation(query string, z *Zone) string {
 	return ""
 }
 
-func (redis *Redis) get(key string, z *Zone) *Record {
+func (redisService *RedisService) get(key string, z *Zone) *Record {
 	var label string
 	if key == z.Name {
 		label = "@"
@@ -356,49 +356,46 @@ func splitQuery(query string) (string, string, bool) {
 	return closestEncloser, sourceOfSynthesis, true
 }
 
-func (redis *Redis) Connect() {
+func (redisService *RedisService) Connect() {
 	Infof("Connecting to redis cluster ... - for address: %s, password: %s, connectTimeout: %s, readTimeout: %s, writeTimeout: %s, maxRetries: %d, poolSize: %d, ttl: %d, keyPrefix: %s",
-		redis.address,
-		redis.password,
-		redis.connectTimeout,
-		redis.readTimeout,
-		redis.writeTimeout,
-		redis.maxRetries,
-		redis.poolSize,
-		redis.ttl,
-		redis.keyPrefix,
+		redisService.address,
+		redisService.password,
+		redisService.connectTimeout,
+		redisService.readTimeout,
+		redisService.writeTimeout,
+		redisService.maxRetries,
+		redisService.poolSize,
+		redisService.ttl,
+		redisService.keyPrefix,
 	)
-
-	_address := strings.Split(redis.address, ",")
-	redis.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
+	_address := strings.Split(redisService.address, ",")
+	redisService.ClusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
 		Addrs:        _address,
-		Password:     redis.password,
-		DialTimeout:  redis.connectTimeout * time.Second,
-		ReadTimeout:  redis.readTimeout * time.Second,
-		WriteTimeout: redis.writeTimeout * time.Second,
-
-		MaxRetries: redis.maxRetries,
-		PoolSize:   redis.poolSize,
+		Password:     redisService.password,
+		DialTimeout:  redisService.connectTimeout * time.Second,
+		ReadTimeout:  redisService.readTimeout * time.Second,
+		WriteTimeout: redisService.writeTimeout * time.Second,
+		MaxRetries:   redisService.maxRetries,
+		PoolSize:     redisService.poolSize,
 	})
-
 }
 
-func (redis *Redis) save(zone string, subdomain string, value string) error {
+func (redisService *RedisService) save(zone string, subdomain string, value string) error {
 	var err error
 
-	conn := redis.ClusterClient
+	conn := redisService.ClusterClient
 	if conn == nil {
 		Error("Error connecting to redis")
 		return nil
 	}
 	//defer conn.Close()
 
-	err = conn.HSet(redis.keyPrefix+zone, subdomain, value).Err()
+	err = conn.HSet(redisService.keyPrefix+zone, subdomain, value).Err()
 	return err
 }
 
-func (redis *Redis) load(zone string) *Zone {
-	conn := redis.ClusterClient
+func (redisService *RedisService) load(zone string) *Zone {
+	conn := redisService.ClusterClient
 	if conn == nil {
 		Error("Error redis cluster connection")
 		return nil
@@ -406,8 +403,8 @@ func (redis *Redis) load(zone string) *Zone {
 
 	// step1: Gets it from the local cache first
 	diffTime := time.Now().UnixNano()/1e6 - lastCacheTime[zone]
-	Debugf("time=%d  localCacheExpireMs=%d", diffTime, redis.localCacheExpireMs)
-	if diffTime < redis.localCacheExpireMs {
+	Debugf("time=%d  localCacheExpireMs=%d", diffTime, redisService.localCacheExpireMs)
+	if diffTime < redisService.localCacheExpireMs {
 		z := localCache[zone]
 		if z != nil {
 			Infof("get from local cache: %s", z.Name)
@@ -416,7 +413,7 @@ func (redis *Redis) load(zone string) *Zone {
 	}
 
 	// step2: If the local cache does not exist or has expired, it will be retrieved from redis
-	zoneKey := redis.keyPrefix + zone
+	zoneKey := redisService.keyPrefix + zone
 	zoneData, err := conn.HGetAll(zoneKey).Result()
 
 	// step3: If redis gets none, the last local cache is used again
@@ -448,21 +445,22 @@ func (redis *Redis) load(zone string) *Zone {
 		}
 		z.Locations[key] = r
 	}
+
 	// Update zone to local cache
 	localCache[zone] = z
 	lastCacheTime[zone] = time.Now().UnixNano() / 1e6
-	Infof("get from redis : %s", z.Name)
+	Infof("Got zone from redis : %s", z.Name)
 
 	return z
 }
 
-func (redis *Redis) GetBlacklist() []string {
-	conn := redis.ClusterClient
+func (redisService *RedisService) GetBlacklist() []string {
+	conn := redisService.ClusterClient
 	if conn == nil {
 		Error("error connecting to redis")
 		return nil
 	}
-	_key := redis.getCacheKey(blacklistKeySuffix)
+	_key := redisService.getCacheKey(blacklistKeySuffix)
 	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
 		Error("error get dns blacklist", err)
@@ -472,13 +470,13 @@ func (redis *Redis) GetBlacklist() []string {
 	return smembers
 }
 
-func (redis *Redis) GetWhitelist() []string {
-	conn := redis.ClusterClient
+func (redisService *RedisService) GetWhitelist() []string {
+	conn := redisService.ClusterClient
 	if conn == nil {
 		Error("error connecting to redis")
 		return nil
 	}
-	_key := redis.getCacheKey(whitelistKeySuffix)
+	_key := redisService.getCacheKey(whitelistKeySuffix)
 	smembers, err := conn.SMembers(_key).Result()
 	if err != nil {
 		Error("Error get dns whitelist", err)
@@ -488,8 +486,8 @@ func (redis *Redis) GetWhitelist() []string {
 	return smembers
 }
 
-func (redis *Redis) getCacheKey(suffix string) string {
-	return redis.keyPrefix + suffix
+func (redisService *RedisService) getCacheKey(suffix string) string {
+	return redisService.keyPrefix + suffix
 }
 
 func split255(s string) []string {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package xcloud_dopaas_coredns
+package coredns_gdns
 
 import (
 	"encoding/json"
@@ -27,8 +27,8 @@ import (
 
 var clusterClient *redisCon.ClusterClient
 
-func TestRedisCollector(t *testing.T) {
-	fmt.Println("Testing collector starting ...")
+func TestRedisCollection(t *testing.T) {
+	fmt.Println("Testing redis collection starting ...")
 	clusterClient = redisCon.NewClusterClient(&redisCon.ClusterOptions{
 		Addrs: []string{ // 填写master主机
 			"10.0.0.160:6379", "10.0.0.160:6380", "10.0.0.160:6381", "10.0.0.162:6379", "10.0.0.162:6380", "10.0.0.162:6381",
@@ -39,18 +39,18 @@ func TestRedisCollector(t *testing.T) {
 		WriteTimeout: 5 * time.Second, // 设置写入超时
 	})
 
-	hget := clusterClient.HGet("_dns:heweijie.top", "host").Val()
+	hget := clusterClient.HGet("_dns:wl4g.io.", "host").Val()
 	fmt.Println(hget)
 
-	vals := clusterClient.HKeys("_dns:heweijie.top.").Val() //_dns:heweijie.top.
+	vals := clusterClient.HKeys("_dns:wl4g.io.").Val() //_dns:wl4g.io.
 	fmt.Println(vals)
 
 	smembers := clusterClient.SMembers("_dns_blacklist").Val()
 	fmt.Println(smembers)
 
-	hGetAll := clusterClient.HGetAll("_dns:shangmai.com.").Val()
+	hGetAll := clusterClient.HGetAll("_dns:wl4g.io.").Val()
 	z := new(Zone)
-	z.Name = "shangmai.com"
+	z.Name = "wl4g.io"
 	z.Locations = make(map[string]*Record)
 	for key, val := range hGetAll {
 		r := new(Record)
@@ -62,15 +62,14 @@ func TestRedisCollector(t *testing.T) {
 		z.Locations[key] = r
 	}
 	fmt.Println(z)
-
 }
 
 func TestQname2Zone(t *testing.T) {
-	s := Qname2Zone("host.heweijie.top.")
+	s := Qname2Zone("host.wl4g.io.")
 	fmt.Println(s)
-	s = Qname2Zone("heweijie.com.cn.")
+	s = Qname2Zone("wl4g.com.cn.")
 	fmt.Println(s)
-	s = Qname2Zone("heweijie.top.")
+	s = Qname2Zone("wl4g.io.")
 	fmt.Println(s)
 }
 

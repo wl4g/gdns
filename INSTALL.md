@@ -1,32 +1,38 @@
-### Secondary development xcloud_dopaas_coredns
+### Development guide
 
-#### 1, download the project
-First, git clone https://github.com/coredns/coredns (you need to download the coredns main library project before running external plugins)
+#### 1, Clone the project
 
-#### 2, configure the plugin
+First, `git clone https://github.com/coredns/coredns` (you need to download the coredns main library project before running external plugins)
+
+#### 2, Configure the plugin
+
 Modify the configuration file coredns/plugin.cfg, for example, add our plug-in on the front line of the forward plug-in (note: because caddy used by coredns will determine the execution order according to the plug-in configuration order), the advantage before putting it in the forward plug-in is that it can be controlled DNS recursively parses queries upwards.
 
-```
+```bash
 vim coredns/plugin.cfg
 ...
-# The development environment recommends using the local directory name xcloud_dopaas_coredns directly, without using the github.com/wl4g/xcloud_dopaas_coredns address.
-xcloud_dopaas_coredns:xcloud_dopaas_coredns
-#xcloud_dopaas_coredns:github.com/wl4g/xcloud_dopaas_coredns
+
+# The development environment recommends using the local directory name coredns_gdns directly, without using the github.com/wl4g/coredns_gdns address.
+coredns_gdns:coredns_gdns
+#coredns_gdns:github.com/wl4g/coredns_gdns
 forward:forward
 ...
 ```
 
 #### 2.1, Make plugin effective (regenerate directives)
+
 ```go
 go run directives_generate.go
 ```
-> After the regeneration is successful, you can check the source code file: `coredns/core/plugin/zplugin.go` and `coredns/core/dnsserver/zdirectives.go`
 
-#### 3, compile (merge plugin)
+After the regeneration is successful, you can check the source code file: `coredns/core/plugin/zplugin.go` and `coredns/core/dnsserver/zdirectives.go`
+
+#### 3, Build (merge plugin)
+
 Before executing make, you can modify the Makefile to modify the configuration to achieve cross compilation, such as:
 
-```
-Add "GOOS=linux GOARCH=amd64" after SYSTEM:=, then the binary file of the Linux system is generated:
+```bash
+# Add "GOOS=linux GOARCH=amd64" after SYSTEM:=, then the binary file of the Linux system is generated:
 SYSTEM:=GOOS=linux GOARCH=amd64
 SYSTEM:=GOOS=windows GOARCH=amd64
 SYSTEM:=GOOS=darwin GOARCH=amd64
@@ -42,19 +48,21 @@ For more configuration items, please refer to the coredns official website. For 
 
 If everything is normal, the coredns execution file will be generated in the coredns/ directory after compilation and start running:
 
-```
+```bash
 ./coredns -conf Corefile
 ```
 
 #### 6, Tests run
 
 Add test data:
-```
+
+```bash
 redis-cli> hset _coredns:example.net. me "{\"a\":[{\"ttl\":300, \"ip\":\"10.0.0.166\"}]}"
 ```
 
 DNS client query test:
-```
+
+```bash
 #dig @202.106.0.20 -p 53 -t a google.com
 dig @127.0.0.1 -p 1053 -t a me.example.net
 

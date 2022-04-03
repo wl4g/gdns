@@ -1,4 +1,4 @@
-package xcloud_dopaas_coredns
+package coredns_gdns
 
 import (
 	"context"
@@ -191,10 +191,10 @@ var testCases = [][]test.Case{
 	},
 }
 
-func newRedisPlugin() *Redis {
+func newRedisPlugin() *RedisService {
 	ctxt = context.TODO()
 
-	redis := new(Redis)
+	redis := new(RedisService)
 	redis.keyPrefix = ""
 	redis.ttl = 300
 	redis.address = "localhost:6379"
@@ -203,12 +203,12 @@ func newRedisPlugin() *Redis {
 	//redis.LoadZones()
 	return redis
 	/*
-		return &Redis {
+		return &RedisService {
 			keyPrefix: "",
 			keySuffix:"",
 			redisc: client,
 			Ttl: 300,
-		}	redis := new(Redis)
+		}	redis := new(RedisService)
 	*/
 }
 

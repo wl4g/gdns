@@ -1,4 +1,4 @@
-package xcloud_dopaas_coredns
+package coredns_gdns
 
 import (
 	"fmt"

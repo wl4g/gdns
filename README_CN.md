@@ -1,6 +1,6 @@
-## 集成于DoPaaS的CoreDNS企业级插件
+## 集成于 DoPaaS 的 CoreDNS 企业级插件
 
-> 支持从redis-cluster获取zones解析记录，可与DoPaaS整合[https://github.com/wl4g/xcloud-dopaas](https://github.com/wl4g/xcloud-dopaas)，提供DoPaaS统一管理web GUI
+> 支持从 redis-cluster 获取 zones 解析记录，可与 DoPaaS 整合[https://github.com/wl4g/dopaas](https://github.com/wl4g/dopaas)，提供 DoPaaS 统一管理 web GUI
 
 English version goes [here](./README.md)
 
@@ -8,7 +8,7 @@ English version goes [here](./README.md)
 
 ### 配置示例
 
-更多配置项可参考coredns官网查看，如 我们给出常规示例：
+更多配置项可参考 coredns 官网查看，如 我们给出常规示例：
 
 ```hocon
 .:53 {
@@ -18,7 +18,7 @@ English version goes [here](./README.md)
         fallthrough
     }
     # Load zones records from redis-cluster(default settings).
-    xcloud_dopaas_coredns {
+    coredns_gdns {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password ""
         connect_timeout 5000
@@ -48,17 +48,16 @@ English version goes [here](./README.md)
 }
 ```
 
-* `address` redis集群节点地址 host:port or ip:port，默认: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
-* `password` redis集群密码，默认：空
+* `address` redis 集群节点地址 host:port or ip:port，默认: localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
+* `password` redis 集群密码，默认：空
 * `connect_timeout` 连接超时时间，默认：5000ms
 * `read_timeout` 数据读取超时时间，默认：10000ms
 * `write_timeout` 数据写入超时时间，默认：5000ms
 * `max_retries` 最大重试次数，默认：10
-* `pool_size` redis连接池大小，默认：10
-* `ttl` zones解析缓存ttl，默认：360sec
-* `prefix` zones解析记录数据存储在redis-cluster的key前缀，默认值：`_coredns:`
-* `local_cache_expire_ms` zones解析记录本地高速缓存的有效期，默认：5000ms (说明: 为了提高性能, zones映射数据加载顺序依次为:  localCache -> redisCache -> db)
-
+* `pool_size` redis 连接池大小，默认：10
+* `ttl` zones 解析缓存 ttl，默认：360sec
+* `prefix` zones 解析记录数据存储在 redis-cluster 的 key 前缀，默认值：`_coredns:`
+* `local_cache_expire_ms` zones 解析记录本地高速缓存的有效期，默认：5000ms (说明: 为了提高性能, zones 映射数据加载顺序依次为:  localCache -> redisCache -> db)
 
 ### 反向解析
 
@@ -68,11 +67,11 @@ English version goes [here](./README.md)
 
 目前暂不支持代理解析
 
-### zones解析记录存储在redis-cluster中的数据格式
+### zones 解析记录存储在 redis-cluster 中的数据格式
 
-每个zone作为散列映射存储在redis-cluster中，以zone作为key。注：按照https://tools.ietf.org/html/rfc6763规约，以“.”后缀结尾。如：
+每个 zone 作为散列映射存储在 redis-cluster 中，以 zone 作为 key。注：按照`https://tools.ietf.org/html/rfc6763`规约，以“.”后缀结尾。如：
 
-```
+```bash
 redis-cli>KEYS *
 1) "example.com."
 2) "example.net."
@@ -81,7 +80,7 @@ redis-cli>
 
 #### dns RRs
 
-以json字符串格式存储在redis集群中，*@* 用于区域自身的RR值。如：
+以 json 字符串格式存储在 redis 集群中，`*@*`用于区域自身的`RR`值。如：
 
 #### A
 
@@ -193,7 +192,7 @@ redis-cli>
 
 ### 解析示例
 
-```
+```bash
 $ORIGIN example.net.
  example.net.                 300 IN  SOA   <SOA RDATA>
  example.net.                 300     NS    ns1.example.net.
@@ -209,9 +208,9 @@ $ORIGIN example.net.
  host2.example.net                    CAA   0 issue "letsencrypt.org"
 ```
 
-以上zones数据应存储在redis-cluster中，如下所示：
+以上 zones 数据应存储在 redis-cluster 中，如下所示：
 
-```
+```bash
 redis-cli> hgetall example.net.
  1) "_ssh._tcp.host1"
  2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\":10,\"weight\":100}]}"

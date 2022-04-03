@@ -1,5 +1,5 @@
 ## CoreDNS enterprise plugin for DoPaaS
-> That can obtain zone resolution records from redis-cluster, it can be integrated with DoPaaS [https://github.com/wl4g/xcloud-dopaas](https://github.com/wl4g/xcloud-dopaas), provides DoPaaS unified management web GUI.
+> That can obtain zone resolution records from redis-cluster, it can be integrated with DoPaaS [https://github.com/wl4g/dopaas](https://github.com/wl4g/dopaas), provides DoPaaS unified management web GUI.
 
 English version goes [here](./README.md)
 
@@ -17,7 +17,7 @@ For more configuration items, please refer to the coredns official website. For 
         fallthrough
     }
     # Load zones records from redis-cluster(default settings).
-    xcloud_dopaas_coredns {
+    coredns_gdns {
         address localhost:6379,localhost:6380,localhost:6381,localhost:7379,localhost:7380,localhost:7381
         password "123456"
         connect_timeout 5000
@@ -71,7 +71,7 @@ Currently does not support direction resolution
 
 Each zone is stored as a hash map in redis-cluster, with zone as the key. Note: According to the https://tools.ietf.org/html/rfc6763 protocol, it ends with a "." suffix. Such as:
 
-```
+```bash
 redis-cli>KEYS *
 1) "example.com."
 2) "example.net."
@@ -192,7 +192,7 @@ Stored in redis cluster in json string format, *@* is used for RR value of the r
 
 ### Parsing example
 
-```
+```bash
 $ORIGIN example.net.
  example.net. 300 IN SOA <SOA RDATA>
  example.net. 300 NS ns1.example.net.
@@ -210,7 +210,7 @@ $ORIGIN example.net.
 
 The above zone data should be stored in redis-cluster as follows:
 
-```
+```bash
 redis-cli> hgetall example.net.
  1) "_ssh._tcp.host1"
  2) "{\"srv\":[{\"ttl\":300, \"target\":\"tcp.example.com.\",\"port\":123,\"priority\" :10,\"weight\":100}]}"

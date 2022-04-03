@@ -1,4 +1,4 @@
-package xcloud_dopaas_coredns
+package coredns_gdns
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 // ServeDNS implements the plugin.Handler interface.
-func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+func (redisService *RedisService) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
 	state := request.Request{W: w, Req: r}
 
 	qname := state.Name()
@@ -19,22 +19,22 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 	zone := Qname2Zone(qname)
 
 	//Blacklist use this way
-	access := redis.filter(qname)
+	access := redisService.filter(qname)
 	if !access {
 		return dns.RcodeRefused, nil
 	}
 
 	if zone == "" {
-		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+		return plugin.NextOrFailure(qname, redisService.Next, ctx, w, r)
 	}
 
-	z := redis.load(zone)
+	z := redisService.load(zone)
 	if z == nil {
-		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+		return plugin.NextOrFailure(qname, redisService.Next, ctx, w, r)
 	}
 
 	if qtype == "AXFR" {
-		records := redis.AXFR(z)
+		records := redisService.AXFR(z)
 
 		ch := make(chan *dns.Envelope)
 		tr := new(dns.Transfer)
@@ -65,42 +65,42 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 		return dns.RcodeSuccess, nil
 	}
 
-	location := redis.findLocation(qname, z)
+	location := redisService.findLocation(qname, z)
 	if len(location) == 0 { // empty, no results
-		//return redis.errorResponse(state, zone, dns.RcodeNameError, nil)
-		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+		//return redisService.errorResponse(state, zone, dns.RcodeNameError, nil)
+		return plugin.NextOrFailure(qname, redisService.Next, ctx, w, r)
 	}
 
 	answers := make([]dns.RR, 0, 10)
 	extras := make([]dns.RR, 0, 10)
 
-	record := redis.get(location, z)
+	record := redisService.get(location, z)
 	if record == nil {
-		return plugin.NextOrFailure(qname, redis.Next, ctx, w, r)
+		return plugin.NextOrFailure(qname, redisService.Next, ctx, w, r)
 	}
 
 	switch qtype {
 	case "A":
-		answers, extras = redis.A(qname, z, record)
+		answers, extras = redisService.A(qname, z, record)
 	case "AAAA":
-		answers, extras = redis.AAAA(qname, z, record)
+		answers, extras = redisService.AAAA(qname, z, record)
 	case "CNAME":
-		answers, extras = redis.CNAME(qname, z, record)
+		answers, extras = redisService.CNAME(qname, z, record)
 	case "TXT":
-		answers, extras = redis.TXT(qname, z, record)
+		answers, extras = redisService.TXT(qname, z, record)
 	case "NS":
-		answers, extras = redis.NS(qname, z, record)
+		answers, extras = redisService.NS(qname, z, record)
 	case "MX":
-		answers, extras = redis.MX(qname, z, record)
+		answers, extras = redisService.MX(qname, z, record)
 	case "SRV":
-		answers, extras = redis.SRV(qname, z, record)
+		answers, extras = redisService.SRV(qname, z, record)
 	case "SOA":
-		answers, extras = redis.SOA(qname, z, record)
+		answers, extras = redisService.SOA(qname, z, record)
 	case "CAA":
-		answers, extras = redis.CAA(qname, z, record)
+		answers, extras = redisService.CAA(qname, z, record)
 
 	default:
-		return redis.errorResponse(state, zone, dns.RcodeNotImplemented, nil)
+		return redisService.errorResponse(state, zone, dns.RcodeNotImplemented, nil)
 	}
 
 	m := new(dns.Msg)
@@ -117,9 +117,9 @@ func (redis *Redis) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 // Name implements the Handler interface.
-func (redis *Redis) Name() string { return PluginName }
+func (redisService *RedisService) Name() string { return PluginName }
 
-func (redis *Redis) errorResponse(state request.Request, zone string, rcode int, err error) (int, error) {
+func (redisService *RedisService) errorResponse(state request.Request, zone string, rcode int, err error) (int, error) {
 	m := new(dns.Msg)
 	m.SetRcode(state.Req, rcode)
 	m.Authoritative, m.RecursionAvailable, m.Compress = true, false, true
@@ -131,13 +131,13 @@ func (redis *Redis) errorResponse(state request.Request, zone string, rcode int,
 }
 
 // blacklist and whitelist
-func (redis *Redis) filter(qname string) bool {
+func (redisService *RedisService) filter(qname string) bool {
 	if len(qname) <= 0 {
 		return false
 	}
 	qname = qname[0 : len(qname)-1]
-	whitelistExp := redis.GetWhitelist()
-	blacklistExp := redis.GetBlacklist()
+	whitelistExp := redisService.GetWhitelist()
+	blacklistExp := redisService.GetBlacklist()
 	for _, expression := range whitelistExp {
 		match := ExpressionMatch(qname, expression)
 		if match {

@@ -4,7 +4,7 @@
     fallthrough
   }
 
-  xcloud_dopaas_coredns {
+  coredns_gdns {
     address "127.0.0.1:6379,127.0.0.1:6380,127.0.0.1:6381,127.0.0.1:7379,127.0.0.1:7380,127.0.0.1:7381"
     password "zzx!@#$%"
     connect_timeout 5000
